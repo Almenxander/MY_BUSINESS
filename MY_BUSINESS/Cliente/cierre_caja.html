@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY_BUSINESS - Cierre de Caja Diario</title>
+</head>
+
+<body>
+
+    <header>
+        <h1>MY_BUSINESS - Arqueo y Cierre de Caja </h1>
+        <nav>
+            <ul>
+                <li><a href="ventas.html">Volver a Ventas</a></li>
+                <li><a href="dueño.html">Volver al Panel de Control</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <header>
+                <h2>Resumen de Ventas Turno</h2>
+                <p>Fecha de corte: 25 abril 2026</p>
+                <p>Responsable: yesid sanabria</p>
+            </header>
+
+            <article>
+                <h3>Ventas Segun Sistema</h3>
+                <table border="1">
+                    <caption>Total agrupado según medio de pago</caption>
+                    <thead>
+                        <tr>
+                            <th>Metodo de Pago</th>
+                            <th>Valor Registrado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Efectivo</td>
+                            <td>$450.000</td>
+                        </tr>
+                        <tr>
+                            <td>Nequi / Daviplata</td>
+                            <td>$120.000</td>
+                        </tr>
+                        <tr>
+                            <td>Tarjeta / Datafono</td>
+                            <td>$230.000</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>total En Caja $</th>
+                            <td><strong>800.000</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </article>
+
+            <hr>
+
+            <Article>
+                <h3>Conteo Fisico del Dinero</h3>
+                <form action="#" method="post">
+                    <fieldset>
+                        <legend>Ingrese el Dinero Físico</legend>
+
+                        <label for="efectivo_fisico">Total Efectivo en Caja</label>
+                        <input type="number" id="efectivo_fisico" name="efectivo_fisico" required placeholder="Hoy hay en caja $...($123.456)">
+
+                        <label for="comprobantes_tarjetas">Total Dinero en Vauchers: (Tarjetas) </label>
+                        <input type="number" name="comprobantes_tarjetas" id="comprobantes_tarjetas" required placeholder="ejem:($123.456)">
+
+                        <label for="observaciones_cierre">Novedades u observaciones</label>
+                        <textarea name="observaciones_cierre" id="observaciones_cierre" cols="50" rows="4" placeholder="ejem: Seentrega base de: $... y la venta diaria fue de $..."></textarea>
+
+                        <br>
+                        <br>
+                        <button type="submit">Realizar Cierre de Caja / Turno</button>
+
+                    </fieldset>
+                </form>
+                
+            </Article>
+
+            <hr>
+
+            <article>
+                <h3>Resultado del Cierre de Caja / Turno </h3>
+                <ul>
+                    <li>Diferencia en Efectivo: <strong>$0</strong></li>
+                    <li>Estado: Caja Completa. ☺</li>
+                </ul>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>MY_BUSINESS - Sistema de Control Operativo</p>
+        <p>Yesid Alexander Sanabria Ávila ING DESARROLLADOR</p>
+    </footer>
+
+</body>
+
+</html>

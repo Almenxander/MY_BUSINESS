@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY_BUSINESS - GESTION DE INVENTARIO</title>
+</head>
+
+<body>
+
+    <header>
+        <h1>MY_BUSINESS: Control de Existencias</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Salir</a></li>
+                <li><a href="panel_administrativo.html">Administración</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Registrar Nuevo Producto</h2>
+            <form action="#" method="post">
+                <fieldset>
+                    <legend>Información Técnica y Comercial</legend>
+
+                    <label for="sku">Código Único (SKU):</label>
+                    <input type="text" id="sku" name="sku" required placeholder="Ejem: AB-001">
+
+                    <label for="nombre_producto">Nombre del Producto:</label>
+                    <input type="text" id="nombre_producto" name="nombre_producto" required>
+
+                    <label for="categoria">Categoria:</label>
+                    <select name="categoria" id="categoria">
+                        <option value="alimentos">Alimentos</option>
+                        <option value="aseo">Articulos de Aseo</option>
+                        <option value="otros">otros</option>
+                    </select>
+
+                    <label for="precio_costo">Precio de compra: (Costo):</label>
+                    <input type="number" id="precio_costo" name="precio_costo">
+
+                    <label for="precio_venta">Precio de venta al público:</label>
+                    <input type="number" name="precio_venta" id="precio_venta">
+
+                    <label for="Cantidad_inicial">Cantidad Inicial en Bodega:</label>
+                    <input type="number" id="Cantidad_inicial" name="Cantidad_inicial">
+
+                    <button type="submit">Guardar en el Inventario</button>
+                </fieldset>
+            </form>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>Listado de Productos en Almacén</h2>
+            <article>
+                <h3>Filtros de busqueda</h3>
+                <input type="search" placeholder="Buscar por Nombre o SKU">                
+            </article>
+
+            <table border="1">
+                <caption>Resumen de Existencias Actuales</caption>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Cantidad Actual</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SKU-001</td>
+                        <td>Arroz 1k</td>
+                        <td>Alimentos</td>
+                        <td>5</td>
+                        <td><strong>Baja Caltidad</strong></td>
+                        <td><button type="button">Editar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <footer><p>Sistema MY_BUSINESS - Gestion de Inventarios en Tiempo Real</p></footer>
+
+</body>
+
+</html>

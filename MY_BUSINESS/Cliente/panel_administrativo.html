@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY_BUSINESS - Panel Administrativo y Contable</title>
+</head>
+
+<body>
+
+    <header>
+        <h1>MY_BUSINESS: Administración y Contabilidad</h1>
+        <nav>
+            <ul>
+                <li><a href="#">Volver al Inicio</a></li>
+                <li>Usuario: Yesid Sanabria (Administrador)</li>
+                <li><button type="button">Cerrar Sesión </button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <header>
+                <h2>Impuestos y Retefuente</h2>
+                <p>Confugure las tarifas vigentes según la normativa de la DIAN</p>
+            </header>
+
+            <article>
+                <form action="#" method="post">
+                    <fieldset>
+                        <legend>Configuracion de IVA e ICA</legend>
+
+                        <label for="tarifa_iva_general">Tarifa IVA General (%):</label>
+                        <input type="number" id="tarifa_iva_general" name="tarifa_iva_general" value="19">
+
+                        <label for="tarifa_ica">Tarifa ICA</label>
+                        <input type="number" id="tarifa_ica" name="tarifa_ica" step="0.01">
+
+                        <label for="agente_retencion">¿El negocio es Agente de Retencion?</label>
+                        <select name="agente_retencion" id="agente_retencion">
+                            <option value="si">Si</option>
+                            <option value="no">No</option>
+                        </select>
+                        <button>ACTUALIZAR</button>
+                    </fieldset>
+                </form>
+            </article>
+        </section>
+
+        <hr>
+
+        <section>
+            <header>
+                <h2>Reportes CONTABLES Y TRIBUTARIOS</h2>
+            </header>
+
+            <article>
+                <h3>Resumen de IVA Cobrado por Período</h3>
+                <form action="#" method="get">
+
+                    <label for="fecha_de_inicio">Desde:</label>
+                    <input type="date" id="fecha_de_inicio" name="fecha_de_inicio">
+
+                    <label for="fecha_de_fin">Hasta:</label>
+                    <input type="date" name="fecha_de_fin" id="fecha_de_fin">
+
+                    <button type="submit">Generar Reporte</button>
+                </form>
+
+                <table>
+                    <caption>Facturación Auxiliar de Ventas</caption>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Comprobante</th>
+                            <th>Base Gravable</th>
+                            <th>Tarifa Aplicada</th>
+                            <th>IVA Liquidado</th>
+                            <th>Total Transacción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>24-04.2026</td>
+                            <td>0001</td>
+                            <td>$100.000</td>
+                            <td>19%</td>
+                            <td>$19.000</td>
+                            <td>$119.000</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">Total IVA a declarar en este periodo</th>
+                            <td colspan="2">$19.000</td>
+                        </tr>
+                    </tfoot>
+
+
+                </table>
+
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <nav>
+            <ul>
+                <li><a href="#">Descargar Backup de la Base de Datos</a></li>
+                <li><a href="#">Manual de Usuario Contable</a></li>
+            </ul>
+        </nav>
+        <p>MY_BUSINESS Sistema de Gestión 2026.</p>
+    </footer>
+
+</body>
+
+</html>
