@@ -1,1 +1,1 @@
-verificar_sesion('contador');
+verificar_sesion('Contador');

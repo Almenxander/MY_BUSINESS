@@ -1,4 +1,6 @@
-verificar_sesion('Dueño');
+document.addEventListener('DOMContentLoaded', () => {
+    verificar_sesion('Dueño');
+});
 
 const formulario_crear_usuario = document.querySelector('#formulario_crear_usuario');
 

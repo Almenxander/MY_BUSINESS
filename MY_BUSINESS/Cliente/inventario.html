@@ -22,7 +22,7 @@
     <main>
         <section>
             <h2>Registrar Nuevo Producto</h2>
-            <form action="#" method="post">
+            <form id="formulario_producto" action="#" method="post">
                 <fieldset>
                     <legend>Información Técnica y Comercial</legend>
 
@@ -32,34 +32,53 @@
                     <label for="nombre_producto">Nombre del Producto:</label>
                     <input type="text" id="nombre_producto" name="nombre_producto" required>
 
-                    <label for="categoria">Categoria:</label>
+                    <label for="categoria">Categoría:</label>
                     <select name="categoria" id="categoria">
                         <option value="alimentos">Alimentos</option>
-                        <option value="aseo">Articulos de Aseo</option>
-                        <option value="otros">otros</option>
+                        <option value="aseo">Artículos de Aseo</option>
+                        <option value="ropa">Ropa y Calzado</option>
+                        <option value="electronica">Electrónica</option>
+                        <option value="otros">Otros</option>
                     </select>
 
-                    <label for="precio_costo">Precio de compra: (Costo):</label>
-                    <input type="number" id="precio_costo" name="precio_costo">
+                    <label for="unidad_medida">Unidad de Medida:</label>
+                    <select name="unidad_medida" id="unidad_medida">
+                        <option value="Unidad">Unidad</option>
+                        <option value="Kilo">Kilo</option>
+                        <option value="Litro">Litro</option>
+                        <option value="Metro">Metro</option>
+                    </select>
 
-                    <label for="precio_venta">Precio de venta al público:</label>
-                    <input type="number" name="precio_venta" id="precio_venta">
+                    <label for="precio_costo">Precio de Compra (Costo):</label>
+                    <input type="number" id="precio_costo" name="precio_costo" required min="0">
 
-                    <label for="Cantidad_inicial">Cantidad Inicial en Bodega:</label>
-                    <input type="number" id="Cantidad_inicial" name="Cantidad_inicial">
+                    <label for="precio_venta">Precio de Venta al Público:</label>
+                    <input type="number" id="precio_venta" name="precio_venta" required min="0">
+
+                    <label for="tarifa_iva">Tarifa IVA (Normativa DIAN):</label>
+                    <select name="tarifa_iva" id="tarifa_iva">
+                        <option value="19">19% - Tarifa General</option>
+                        <option value="5">5% - Tarifa Diferencial</option>
+                        <option value="0">0% - Excluido de IVA</option>
+                    </select>
+
+                    <label for="cantidad_stock">Cantidad Inicial en Bodega:</label>
+                    <input type="number" id="cantidad_stock" name="cantidad_stock" required min="0">
+
+                    <label for="stock_minimo">Stock Mínimo (Alerta):</label>
+                    <input type="number" id="stock_minimo" name="stock_minimo" value="5" min="1">
 
                     <button type="submit">Guardar en el Inventario</button>
                 </fieldset>
             </form>
         </section>
-
         <hr>
 
         <section>
             <h2>Listado de Productos en Almacén</h2>
             <article>
                 <h3>Filtros de búsqueda</h3>
-                <input type="search" placeholder="Buscar por Nombre o SKU">
+                <input type="search" id="buscador" placeholder="Buscar por Nombre o SKU">
             </article>
 
             <table border="1">
@@ -69,12 +88,14 @@
                         <th>SKU</th>
                         <th>Producto</th>
                         <th>Categoría</th>
-                        <th>Cantidad Actual</th>
+                        <th>Cantidad</th>
+                        <th>Precio Venta</th>
+                        <th>IVA</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tabla_productos">
                     <tr>
                         <td>SKU-001</td>
                         <td>Arroz 1k</td>
@@ -92,8 +113,8 @@
     <footer>
         <p>Sistema MY_BUSINESS - Gestion de Inventarios en Tiempo Real</p>
     </footer>
-    <script src="auth.js"></script>
-    <script src="inventario.js"></script>
+    <script src="auth.js" defer></script>
+    <script src="inventario.js" defer></script>
 </body>
 
 </html>

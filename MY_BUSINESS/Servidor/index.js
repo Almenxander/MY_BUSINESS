@@ -95,6 +95,102 @@ app.post('/crear-usuario', async (req, res) => {
     }
 });
 
+app.post('/productos', (req, res) => {
+    const { sku, nombre_producto, categoria, precio_costo,
+        precio_venta, tarifa_iva, cantidad_stock,
+        stock_minimo, unidad_medida } = req.body;
+
+    const query = `INSERT INTO productos 
+        (sku, nombre_producto, categoria, precio_costo, 
+         precio_venta, tarifa_iva, cantidad_stock, 
+         stock_minimo, unidad_medida) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(query, [sku, nombre_producto, categoria, precio_costo,
+        precio_venta, tarifa_iva, cantidad_stock,
+        stock_minimo, unidad_medida], (err, result) => {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') {
+                    res.status(400).send({ message: 'Ese SKU ya existe en el inventario' });
+                } else {
+                    res.status(500).send({ message: 'Error al guardar el producto' });
+                }
+            } else {
+                res.status(201).send({ message: 'Producto guardado correctamente' });
+            }
+        });
+});
+
+app.get('/productos', (req, res) => {
+
+    const query = `SELECT id_producto, sku, nombre_producto, 
+                   categoria, precio_costo, precio_venta, tarifa_iva, 
+                   cantidad_stock, stock_minimo, unidad_medida 
+                   FROM productos ORDER BY nombre_producto ASC`;
+
+    db.query(query, (err, result) => {
+        if (err) {
+            res.status(500).send({ message: 'Error al obtener productos' });
+        } else {
+            res.status(200).send(result);
+        }
+    });
+});
+
+
+app.get('/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'SELECT * FROM productos WHERE id_producto = ?';
+
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error al obtener producto:', err); // ← ver error
+            res.status(500).send({ message: err.message });
+        } else if (result.length === 0) {
+            res.status(404).send({ message: 'Producto no encontrado' });
+        } else {
+            res.status(200).send(result[0]);
+        }
+    });
+});
+
+app.delete('/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const query = 'DELETE FROM productos WHERE id_producto = ?';
+
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            console.error('Error al eliminar:', err);
+            res.status(500).send({ message: err.message }); 
+        } else {
+            res.status(200).send({ message: 'Producto eliminado correctamente' });
+        }
+    });
+});
+
+app.put('/productos/:id', (req, res) => {
+    const { id } = req.params;
+    const { nombre_producto, categoria, precio_costo,
+            precio_venta, tarifa_iva, cantidad_stock,
+            stock_minimo, unidad_medida } = req.body;
+
+    const query = `UPDATE productos SET 
+        nombre_producto = ?, categoria = ?, precio_costo = ?,
+        precio_venta = ?, tarifa_iva = ?, cantidad_stock = ?,
+        stock_minimo = ?, unidad_medida = ?
+        WHERE id_producto = ?`;
+
+    db.query(query, [nombre_producto, categoria, precio_costo,
+        precio_venta, tarifa_iva, cantidad_stock,
+        stock_minimo, unidad_medida, id], (err, result) => {
+        if (err) {
+            res.status(500).send({ message: 'Error al actualizar producto' });
+        } else {
+            res.status(200).send({ message: 'Producto actualizado correctamente' });
+        }
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

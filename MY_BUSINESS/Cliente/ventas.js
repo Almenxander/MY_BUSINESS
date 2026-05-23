@@ -1,1 +1,1 @@
-verificar_sesion('operario');
+verificar_sesion('Operario');
