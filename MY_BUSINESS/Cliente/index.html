@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY_BUSINESS -INICIAR SESION</title>
 </head>
+
 <body>
     <main>
         <section>
@@ -13,9 +15,9 @@
                 <p>Sistema CONTABLE para pequeños y grandes negocios</p>
             </header>
 
-            <article>
+            <article id="seccion_login">
                 <h2>Acceso al Sistema</h2>
-                <form action="#" method="post">
+                <form id="formulario_login" action="#" method="post">
                     <fieldset>
                         <legend>Datos de Identificación</legend>
 
@@ -30,6 +32,26 @@
 
                 </form>
             </article>
+            <article id="seccion_primer_uso" style="display:none">
+                <h2>Configuración Inicial del Sistema</h2>
+                <p>Bienvenido. Crea la cuenta del propietario para comenzar.</p>
+                <form id="formulario_primer_uso" action="#" method="post">
+                    <fieldset>
+                        <legend>Datos del Propietario</legend>
+
+                        <label for="nombre_completo">Nombre Completo:</label>
+                        <input type="text" id="nombre_completo" name="nombre_completo" required>
+
+                        <label for="correo_electronico">Correo Electrónico:</label>
+                        <input type="email" id="correo_electronico" name="correo_electronico" required>
+
+                        <label for="clave_unica">Contraseña:</label>
+                        <input type="password" id="clave_unica" name="clave_unica" required>
+
+                        <button type="submit">Crear cuenta y entrar</button>
+                    </fieldset>
+                </form>
+            </article>
 
             <nav>
                 <ul>
@@ -37,9 +59,12 @@
                     <li><a href="#">Soporte Tecnico</a></li>
                 </ul>
             </nav>
-            
+
         </section>
     </main>
-    
+
+    <script src="login.js"></script>
+
 </body>
+
 </html>

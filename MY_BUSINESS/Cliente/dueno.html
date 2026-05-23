@@ -14,7 +14,7 @@
             <ul>
                 <li><a href="ventas.html">Ir a Ventas</a></li>
                 <li><a href="inventario.html">Ir a Inventario</a></li>
-                <li><a href="index.html">Cerrar Sesión de Manera Segura</a></li>
+                <button type="button" onclick="cerrar_sesion()">Cerrar Sesión</button>
             </ul>
         </nav>
     </header>
@@ -35,7 +35,7 @@
 
                 <article>
                     <h3>Ganancia neta</h3>
-                    <p><strong>5.300.000</strong></p>
+                    <p><strong>$5.300.000</strong></p>
                 </article>
             </div>
         </section>
@@ -44,23 +44,26 @@
 
         <section>
             <h2>Gestion de Usuarios y Roles</h2>
-            <p>Desde aca puede crear o elimiar el acceso a sus empleados.</p>
+            <p>Desde aca puede crear o eliminar el acceso a sus empleados.</p>
 
             <article>
                 <h3>Registar Nuevo Empleado</h3>
-                <form action="#" method="post">
+                <form id="formulario_crear_usuario" action="#" method="post">
                     <label for="nombre_empleado">Nombre Completo:</label>
-                    <input type="text" name="nombre_empleado" id="nombre_empleado" required>
+                    <input type="text" name="nombre_completo" id="nombre_completo" required>
+
+                    <label for="correo_electronico">Correo Electrónico:</label>
+                    <input type="email" name="correo_electronico" id="correo_electronico" required>
 
                     <label for="rol_empleados">Asignar Rol De:</label>
                     <select name="rol_empleados" id="rol_empleados">
-                        <option value="vendedor">-vededor / Operario</option>
+                        <option value="vendedor">Vendedor / Operario</option>
                         <option value="contador">Contador</option>
                         <option value="admin">Administrador De Punto</option>
                     </select>
 
-                    <label for="clave_inicial">Contraseña Temporal:</label>
-                    <input type="password" id="clave_inicial" name="clave_inicial" required>
+                    <label for="clave_unicax    ">Contraseña</label>
+                    <input type="password" id="clave_unica" name="clave_unica" required>
 
                     <button type="submit">Crear Usuario</button>
 
@@ -112,6 +115,12 @@
         <p>MY_BUSINESS - Informacion Totalmente Confidencial Del Propietario</p>
         <p>MY_BUSINESS - Desarrollado por Alexander Sanabria Ávila</p>
     </footer>
+
+
+    <script src="auth.js"></script>
+    <script src="dueno.js"></script>
+
 </body>
+
 
 </html>

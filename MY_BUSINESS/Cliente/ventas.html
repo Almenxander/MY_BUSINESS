@@ -22,11 +22,11 @@
         <section>
             <h2>Buscador de Productos</h2>
             <form action="#" method="post">
-                <label for="codigo_barras">Escanear o Dijitar Código SKU</label>
+                <label for="codigo_barras">Escanear o Digitar Código SKU</label>
                 <input type="text" id="codigo_barras" name="codigo_barras" autofocus>
 
-                <label for="cantidad_Producto">Cantidad:</label>
-                <input type="number" id="cantidad_Producto" name="cantidad_Producto" value="1" min="1">
+                <label for="cantidad_producto">Cantidad:</label>
+                <input type="number" id="cantidad_producto" name="cantidad_producto" value="1" min="1">
 
                 <button type="submit">Agregar al carrito</button>
             </form>
@@ -37,16 +37,15 @@
         <section>
             <h2>Carrito de Compras Actual</h2>
             <table border="1">
-                <caption>
-                    Lista de productos para Envio. </caption>
+                <caption>Lista de productos seleccionados</caption>
                 <thead>
                     <tr>
                         <th>Producto</th>
-                        <th>Cantidad.</th>
+                        <th>Cantidad</th>
                         <th>Precio Base</th>
                         <th>IVA (%)</th>
                         <th>Subtotal</th>
-                        <th></th>
+                        <th>Acción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,7 +54,7 @@
                         <td>1</td>
                         <td>$10.000</td>
                         <td>19%</td>
-                        <td>11.900</td>
+                        <td>$11.900</td>
                         <td><button type="button">Quitar</button></td>
                     </tr>
                 </tbody>
@@ -67,30 +66,33 @@
         <section>
             <h2>Resumen y Finalización</h2>
             <article>
-                <p>Total Base:str <strong>$10.000</strong></p>
+                <p>Total Base: <strong>$10.000</strong></p>
                 <p>Total IVA: <strong>$1.900</strong></p>
-                <p><strong>TOTAL A PAGAR: 11.900 COP.</strong></p>
+                <p><strong>TOTAL A PAGAR: $11.900 COP</strong></p>
             </article>
 
-            <form action="#" method="post"></form>
-            <label for="tipo_pago">Medio de Pago:</label>
-            <select name="tipo_pago" id="tipo_pago">
-                <option value="Efectivo">Efectivo</option>
-                <option value="Nequi">Nequi</option>
-                <option value="Targeta">Targeta (Datafono)</option>
-            </select>
+            <form action="#" method="post">
+                <label for="tipo_pago">Medio de Pago:</label>
+                <select name="tipo_pago" id="tipo_pago">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="nequi">Nequi / Daviplata</option>
+                    <option value="tarjeta">Tarjeta (Datáfono)</option>
+                </select>
 
-            <br><br>
-            <button type="submit">Finalizar Venta y Facturar</button>
+                <br><br>
+                <button type="submit">Finalizar Venta y Facturar</button>
+            </form>
+
         </section>
-
     </main>
-
 
     <footer>
         <p>MY_BUSINESS - Yesid Alexander Sanabria Desarrollador</p>
-        <p>Terminal de Ventas Facatativa Cundinamarca</p>
+        <p>Terminal de Ventas - Facatativá, Cundinamarca</p>
+
     </footer>
+    <script src="auth.js"></script>
+    <script src="ventas.js"></script>
 </body>
 
 </html>
