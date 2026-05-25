@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY_BUSINESS - Consulta de Inventario</title>
+</head>
+
+<body>
+
+    <header>
+        <h1>MY_BUSINESS</h1>
+        <p>Consulta de Inventario — Vista del Operario</p>
+        <nav>
+            <ul>
+                <li><a href="ventas.html">Ir a Ventas</a></li>
+                <li><button type="button" onclick="cerrar_sesion()">Cerrar Sesión</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+
+        <section id="buscador_productos">
+            <h2>Buscar Producto</h2>
+            <p>Consulta la disponibilidad de productos en tiempo real antes de registrar una venta.</p>
+
+            <form id="formulario_busqueda" action="#" method="get">
+                <fieldset>
+                    <legend>Filtros de Búsqueda</legend>
+
+                    <label for="buscar_texto">Buscar por Nombre o SKU:</label>
+                    <input type="search" id="buscar_texto" name="buscar_texto"
+                        placeholder="Ej: Arroz o PROD-001" autofocus>
+
+                    <label for="filtro_categoria">Filtrar por Categoría:</label>
+                    <select name="filtro_categoria" id="filtro_categoria">
+                        <option value="">Todas las Categorías</option>
+                        <option value="alimentos">Alimentos y Bebidas</option>
+                        <option value="aseo">Artículos de Aseo</option>
+                        <option value="ropa">Ropa y Calzado</option>
+                        <option value="electronica">Electrónica</option>
+                        <option value="papeleria">Papelería</option>
+                        <option value="ferreteria">Ferretería</option>
+                        <option value="otros">Otros</option>
+                    </select>
+
+                    <button type="button" id="btn_buscar">Buscar</button>
+                    <button type="reset" id="btn_limpiar">Limpiar</button>
+                </fieldset>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="listado_productos_vendedor">
+            <h2>Productos Disponibles</h2>
+            <p>Solo se muestran productos con stock disponible para la venta.</p>
+
+            <table border="1">
+                <caption>Inventario Disponible para Venta</caption>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Unidad</th>
+                        <th>Cantidad Disponible</th>
+                        <th>Precio de Venta</th>
+                        <th>IVA</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla_productos_vendedor">
+                    <tr>
+                        <td colspan="9">Cargando productos disponibles...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <section id="descuento_manual">
+            <h2>Descuento Manual de Unidades</h2>
+            <p>Use esta sección únicamente para registrar salidas de productos que no se hayan generado desde el módulo de ventas.</p>
+
+            <form id="formulario_descuento" action="#" method="post">
+                <fieldset>
+                    <legend>Registrar Salida de Producto</legend>
+
+                    <label for="sku_descuento">Código SKU del Producto:</label>
+                    <input type="text" id="sku_descuento" name="sku_descuento"
+                        placeholder="Ej: PROD-001" required>
+
+                    <label for="cantidad_descuento">Cantidad a Descontar:</label>
+                    <input type="number" id="cantidad_descuento" name="cantidad_descuento"
+                        min="1" required placeholder="Ej: 5">
+
+                    <label for="motivo_descuento">Motivo de la Salida:</label>
+                    <select name="motivo_descuento" id="motivo_descuento" required>
+                        <option value="" disabled selected>-- Seleccione el motivo --</option>
+                        <option value="venta_manual">Venta Manual No Registrada</option>
+                        <option value="muestra">Entrega de Muestra</option>
+                        <option value="dano">Producto Dañado</option>
+                        <option value="vencimiento">Producto Vencido</option>
+                    </select>
+
+                    <label for="observacion_descuento">Observación:</label>
+                    <textarea id="observacion_descuento" name="observacion_descuento"
+                        rows="3" cols="50"
+                        placeholder="Describa brevemente el motivo de la salida"></textarea>
+
+                    <button type="submit" id="btn_descontar">
+                        Registrar Salida
+                    </button>
+                </fieldset>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="alertas_stock">
+            <h2>Alertas de Stock</h2>
+            <p>Productos que requieren reabastecimiento urgente. Informe al Propietario.</p>
+
+            <table border="1">
+                <caption>Productos con Stock Bajo o Agotado</caption>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Producto</th>
+                        <th>Cantidad Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla_alertas_stock">
+                    <tr>
+                        <td colspan="5">No hay alertas de stock en este momento</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>MY_BUSINESS - Consulta de Inventario.</p>
+        <p>Recuerde: Solo el Propietario puede modificar precios o eliminar productos.</p>
+        <p>Desarrollado por: <strong>Yesid Alexander Sanabria Ávila</strong></p>
+    </footer>
+
+    <script src="auth.js" defer></script>
+    <script src="inventario_vendedor.js" defer></script>
+
+</body>
+
+</html>

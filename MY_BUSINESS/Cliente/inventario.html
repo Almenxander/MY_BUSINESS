@@ -4,117 +4,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MY_BUSINESS - GESTION DE INVENTARIO</title>
+    <title>MY_BUSINESS - Gestión de Inventario</title>
 </head>
 
 <body>
 
     <header>
-        <h1>MY_BUSINESS: Control de Existencias</h1>
+        <h1>MY_BUSINESS</h1>
+        <p>Módulo de Gestión de Inventario — Acceso Exclusivo del Propietario</p>
         <nav>
             <ul>
-                <li><a href="index.html">Salir</a></li>
-                <li><a href="panel_administrativo.html">Administración</a></li>
+                <li><a href="dueno.html">Panel de Control</a></li>
+                <li><a href="ventas.html">Ir a Ventas</a></li>
+                <li><a href="panel_administrativo.html">Contabilidad</a></li>
+                <li><button type="button" onclick="cerrar_sesion()">Cerrar Sesión</button></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section>
-            <h2>Registrar Nuevo Producto</h2>
+
+        
+        <hr>
+
+        <section id="seccion_registro_producto">
+            <h2>Registrar o Actualizar Producto</h2>
+            <p>Complete el formulario para agregar un nuevo producto o actualizar uno existente.</p>
+
             <form id="formulario_producto" action="#" method="post">
                 <fieldset>
-                    <legend>Información Técnica y Comercial</legend>
+                    <legend>Identificación del Producto</legend>
 
                     <label for="sku">Código Único (SKU):</label>
-                    <input type="text" id="sku" name="sku" required placeholder="Ejem: AB-001">
+                    <input type="text" id="sku" name="sku" required
+                        placeholder="Ej: PROD-001"
+                        title="Código único e irrepetible del producto">
 
                     <label for="nombre_producto">Nombre del Producto:</label>
-                    <input type="text" id="nombre_producto" name="nombre_producto" required>
+                    <input type="text" id="nombre_producto" name="nombre_producto"
+                        required placeholder="Ej: Arroz Diana Premium 1kg">
 
                     <label for="categoria">Categoría:</label>
-                    <select name="categoria" id="categoria">
-                        <option value="alimentos">Alimentos</option>
-                        <option value="aseo">Artículos de Aseo</option>
+                    <select name="categoria" id="categoria" required>
+                        <option value="" disabled selected>-- Seleccione una categoría --</option>
+                        <option value="alimentos">Alimentos y Bebidas</option>
+                        <option value="aseo">Artículos de Aseo y Limpieza</option>
                         <option value="ropa">Ropa y Calzado</option>
-                        <option value="electronica">Electrónica</option>
+                        <option value="electronica">Electrónica y Tecnología</option>
+                        <option value="papeleria">Papelería y Útiles</option>
+                        <option value="ferreteria">Ferretería y Construcción</option>
                         <option value="otros">Otros</option>
                     </select>
 
                     <label for="unidad_medida">Unidad de Medida:</label>
-                    <select name="unidad_medida" id="unidad_medida">
+                    <select name="unidad_medida" id="unidad_medida" required>
                         <option value="Unidad">Unidad</option>
-                        <option value="Kilo">Kilo</option>
-                        <option value="Litro">Litro</option>
-                        <option value="Metro">Metro</option>
+                        <option value="Kilo">Kilogramo (Kg)</option>
+                        <option value="Gramo">Gramo (g)</option>
+                        <option value="Litro">Litro (L)</option>
+                        <option value="Mililitro">Mililitro (mL)</option>
+                        <option value="Metro">Metro (m)</option>
+                        <option value="Caja">Caja</option>
+                        <option value="Paquete">Paquete</option>
+                        <option value="Docena">Docena</option>
                     </select>
+                </fieldset>
 
-                    <label for="precio_costo">Precio de Compra (Costo):</label>
-                    <input type="number" id="precio_costo" name="precio_costo" required min="0">
+                <fieldset>
+                    <legend>Información de Precios y Tributación</legend>
+
+                    <label for="precio_costo">Precio de Compra — Costo (Solo visible para el Dueño):</label>
+                    <input type="number" id="precio_costo" name="precio_costo"
+                        required min="0" placeholder="Ej: 2500"
+                        title="Valor al que el negocio compra el producto">
 
                     <label for="precio_venta">Precio de Venta al Público:</label>
-                    <input type="number" id="precio_venta" name="precio_venta" required min="0">
+                    <input type="number" id="precio_venta" name="precio_venta"
+                        required min="0" placeholder="Ej: 3500"
+                        title="Valor sin IVA incluido — base gravable">
 
-                    <label for="tarifa_iva">Tarifa IVA (Normativa DIAN):</label>
-                    <select name="tarifa_iva" id="tarifa_iva">
-                        <option value="19">19% - Tarifa General</option>
-                        <option value="5">5% - Tarifa Diferencial</option>
-                        <option value="0">0% - Excluido de IVA</option>
+                    <label for="tarifa_iva">Tarifa IVA según Normativa DIAN 2026:</label>
+                    <select name="tarifa_iva" id="tarifa_iva" required>
+                        <option value="19">19% — Tarifa General</option>
+                        <option value="5">5% — Tarifa Diferencial</option>
+                        <option value="0">0% — Excluido de IVA</option>
                     </select>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Control de Stock</legend>
 
                     <label for="cantidad_stock">Cantidad Inicial en Bodega:</label>
-                    <input type="number" id="cantidad_stock" name="cantidad_stock" required min="0">
+                    <input type="number" id="cantidad_stock" name="cantidad_stock"
+                        required min="0" placeholder="Ej: 100">
 
-                    <label for="stock_minimo">Stock Mínimo (Alerta):</label>
-                    <input type="number" id="stock_minimo" name="stock_minimo" value="5" min="1">
+                    <label for="stock_minimo">Stock Mínimo para Alerta:</label>
+                    <input type="number" id="stock_minimo" name="stock_minimo"
+                        value="5" min="1"
+                        title="Cuando el stock llegue a este número se generará una alerta">
 
-                    <button type="submit">Guardar en el Inventario</button>
+                    <label for="ajuste_cantidad">Ajuste Manual de Cantidad:</label>
+                    <input type="number" id="ajuste_cantidad" name="ajuste_cantidad"
+                        placeholder="Ej: +50 para entrada, -10 para salida">
+
+                    <label for="motivo_ajuste">Motivo del Ajuste:</label>
+                    <select name="motivo_ajuste" id="motivo_ajuste">
+                        <option value="" disabled selected>-- Seleccione el motivo --</option>
+                        <option value="compra">Entrada por Compra a Proveedor</option>
+                        <option value="devolucion">Entrada por Devolución de Cliente</option>
+                        <option value="dano">Salida por Daño o Vencimiento</option>
+                        <option value="merma">Salida por Merma o Pérdida</option>
+                        <option value="muestra">Salida por Muestra o Promoción</option>
+                        <option value="ajuste">Ajuste por Inventario Físico</option>
+                    </select>
                 </fieldset>
+
+                <button type="submit" id="btn_guardar_producto">
+                    Guardar en el Inventario
+                </button>
+
+                <button type="reset" id="btn_limpiar_formulario">
+                    Limpiar Formulario
+                </button>
             </form>
         </section>
+
         <hr>
 
-        <section>
-            <h2>Listado de Productos en Almacén</h2>
-            <article>
-                <h3>Filtros de búsqueda</h3>
-                <input type="search" id="buscador" placeholder="Buscar por Nombre o SKU">
+        <section id="seccion_listado_productos">
+            <h2>Listado Completo de Productos</h2>
+            <p>Consulte, filtre y gestione todos los productos registrados en el sistema.</p>
+
+            <article id="filtros_busqueda">
+                <h3>Filtros de Búsqueda</h3>
+                <form id="formulario_filtros" action="#" method="get">
+                    <fieldset>
+                        <legend>Buscar Productos</legend>
+
+                        <label for="buscar_texto">Buscar por Nombre o SKU:</label>
+                        <input type="search" id="buscar_texto" name="buscar_texto"
+                            placeholder="Ej: Arroz o PROD-001">
+
+                        <label for="filtro_categoria">Filtrar por Categoría:</label>
+                        <select name="filtro_categoria" id="filtro_categoria">
+                            <option value="">Todas las Categorías</option>
+                            <option value="alimentos">Alimentos y Bebidas</option>
+                            <option value="aseo">Artículos de Aseo</option>
+                            <option value="ropa">Ropa y Calzado</option>
+                            <option value="electronica">Electrónica</option>
+                            <option value="papeleria">Papelería</option>
+                            <option value="ferreteria">Ferretería</option>
+                            <option value="otros">Otros</option>
+                        </select>
+
+                        <label for="filtro_estado">Filtrar por Estado:</label>
+                        <select name="filtro_estado" id="filtro_estado">
+                            <option value="">Todos los Estados</option>
+                            <option value="normal">Stock Normal</option>
+                            <option value="bajo">Stock Bajo</option>
+                            <option value="agotado">Agotado</option>
+                        </select>
+
+                        <button type="button" id="btn_buscar">Buscar</button>
+                        <button type="reset" id="btn_limpiar_filtros">Limpiar Filtros</button>
+                    </fieldset>
+                </form>
             </article>
 
+            <article id="tabla_inventario_completo">
+                <h3>Resultados</h3>
+                <table border="1">
+                    <caption>Inventario Actual — Solo visible para el Propietario</caption>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Unidad</th>
+                            <th>Cantidad</th>
+                            <th>Stock Mínimo</th>
+                            <th>Precio Costo</th>
+                            <th>Precio Venta</th>
+                            <th>IVA</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_productos">
+                        <tr>
+                            <td colspan="11">Cargando productos...</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="6">Valor Total del Inventario:</th>
+                            <td colspan="5" id="valor_total_tabla">$0 COP</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <br>
+                <button type="button" id="btn_descargar_inventario">
+                    Descargar Inventario Completo
+                </button>
+                <button type="button" id="btn_descargar_stock_bajo">
+                    Descargar Reporte de Stock Bajo
+                </button>
+            </article>
+        </section>
+
+        <hr>
+
+        <section id="historial_movimientos">
+            <h2>Historial de Movimientos de Inventario</h2>
+            <p>Registro de todas las entradas y salidas de productos para trazabilidad contable.</p>
+
             <table border="1">
-                <caption>Resumen de Existencias Actuales</caption>
+                <caption>Bitácora de Movimientos — Auditoría de Inventario</caption>
                 <thead>
                     <tr>
-                        <th>SKU</th>
+                        <th>Fecha</th>
                         <th>Producto</th>
-                        <th>Categoría</th>
+                        <th>Tipo</th>
                         <th>Cantidad</th>
-                        <th>Precio Venta</th>
-                        <th>IVA</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
+                        <th>Motivo</th>
+                        <th>Responsable</th>
+                        <th>Stock Resultante</th>
                     </tr>
                 </thead>
-                <tbody id="tabla_productos">
+                <tbody id="tabla_movimientos">
                     <tr>
-                        <td>SKU-001</td>
-                        <td>Arroz 1k</td>
-                        <td>Alimentos</td>
-                        <td>5</td>
-                        <td><strong>Baja Cantidad</strong></td>
-                        <td><button type="button">Editar</button></td>
+                        <td colspan="7">No hay movimientos registrados</td>
                     </tr>
                 </tbody>
             </table>
         </section>
+        <hr>
+        <section id="resumen_inventario">
+            <h2>Resumen General del Inventario</h2>
+            <p>Estado actual del stock y valor del inventario en tiempo real.</p>
+
+            <div role="group">
+                <article class="tarjeta_inventario">
+                    <h3>Total Productos Registrados</h3>
+                    <p><strong id="total_productos">0</strong></p>
+                    <small>Referencias únicas en el sistema</small>
+                </article>
+
+                <article class="tarjeta_inventario">
+                    <h3>Productos con Stock Bajo</h3>
+                    <p><strong id="total_stock_bajo">0</strong></p>
+                    <small>Por debajo del stock mínimo configurado</small>
+                </article>
+
+                <article class="tarjeta_inventario">
+                    <h3>Productos Sin Movimiento</h3>
+                    <p><strong id="total_sin_movimiento">0</strong></p>
+                    <small>Sin ventas en los últimos 30 días</small>
+                </article>
+
+                <article class="tarjeta_inventario">
+                    <h3>Valor Total del Inventario</h3>
+                    <p><strong id="valor_total_inventario">$0 COP</strong></p>
+                    <small>Basado en precio de costo actual</small>
+                </article>
+            </div>
+        </section>
+
 
     </main>
 
     <footer>
-        <p>Sistema MY_BUSINESS - Gestion de Inventarios en Tiempo Real</p>
+        <p>MY_BUSINESS - Módulo de Inventario.</p>
+        <p>Acceso restringido — Solo personal autorizado por el Propietario.</p>
+        <p>Desarrollado por: <strong>Yesid Alexander Sanabria Ávila</strong></p>
     </footer>
-    <script src="auth.js" defer></script>
-    <script src="inventario.js" defer></script>
+
+
 </body>
 
 </html>

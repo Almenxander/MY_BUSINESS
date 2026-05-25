@@ -8,91 +8,275 @@
 </head>
 
 <body>
+
     <header>
-        <h1>MY_BUSINESS: Registro de Ventas</h1>
+        <h1>MY_BUSINESS</h1>
+        <p>Terminal de Ventas — <span class="usuario_nombre">Operario</span></p>
         <nav>
             <ul>
-                <li><a href="inventario.html">Ver Inventario</a></li>
-                <li><a href="index.html">Salir</a></li>
+                <li><a href="inventario_vendedor.html">Consultar Inventario</a></li>
+                <li><a href="cierre_caja.html">Cierre de Caja</a></li>
+                <li><button type="button" id="btn_cerrar_sesion">Cerrar Sesión</button></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <section>
-            <h2>Buscador de Productos</h2>
-            <form action="#" method="post">
-                <label for="codigo_barras">Escanear o Digitar Código SKU</label>
-                <input type="text" id="codigo_barras" name="codigo_barras" autofocus>
 
-                <label for="cantidad_producto">Cantidad:</label>
-                <input type="number" id="cantidad_producto" name="cantidad_producto" value="1" min="1">
+        <div class="bloque_operativo_principal">
 
-                <button type="submit">Agregar al carrito</button>
-            </form>
-        </section>
+            <section id="seccion_carrito">
+                <h2>1. Registro de Productos</h2>
+                <p>Escanee el código o digite el SKU para agregar artículos al carrito actual.</p>
 
-        <hr>
+                <form id="formulario_agregar_producto" action="#" method="post">
+                    <fieldset>
+                        <legend>Ingreso de Artículo</legend>
 
-        <section>
-            <h2>Carrito de Compras Actual</h2>
-            <table border="1">
-                <caption>Lista de productos seleccionados</caption>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cantidad</th>
-                        <th>Precio Base</th>
-                        <th>IVA (%)</th>
-                        <th>Subtotal</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Producto Ejemplo</td>
-                        <td>1</td>
-                        <td>$10.000</td>
-                        <td>19%</td>
-                        <td>$11.900</td>
-                        <td><button type="button">Quitar</button></td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+                        <label for="codigo_barras">Código SKU / Barras:</label>
+                        <input type="text" id="codigo_barras" name="codigo_barras" placeholder="Ej: PROD-001" autofocus>
 
-        <hr>
+                        <label for="cantidad_producto">Cantidad:</label>
+                        <input type="number" id="cantidad_producto" name="cantidad_producto" value="1" min="1">
 
-        <section>
-            <h2>Resumen y Finalización</h2>
-            <article>
-                <p>Total Base: <strong>$10.000</strong></p>
-                <p>Total IVA: <strong>$1.900</strong></p>
-                <p><strong>TOTAL A PAGAR: $11.900 COP</strong></p>
-            </article>
+                        <button type="submit" id="btn_agregar_carrito">Agregar al Carrito</button>
+                    </fieldset>
+                </form>
 
-            <form action="#" method="post">
-                <label for="tipo_pago">Medio de Pago:</label>
-                <select name="tipo_pago" id="tipo_pago">
-                    <option value="efectivo">Efectivo</option>
-                    <option value="nequi">Nequi / Daviplata</option>
-                    <option value="tarjeta">Tarjeta (Datáfono)</option>
-                </select>
+                <article id="carrito_actual">
+                    <h3>Lista de Artículos Cargados</h3>
+                    <table>
+                        <caption>Productos en la venta en curso</caption>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Producto</th>
+                                <th>Cant.</th>
+                                <th>Precio Base</th>
+                                <th>IVA (%)</th>
+                                <th>Valor IVA</th>
+                                <th>Subtotal</th>
+                                <th>Acción</th> </tr>
+                        </thead>
+                        <tbody id="tabla_carrito">
+                            <tr>
+                                <td colspan="8">El carrito está vacío. Inicie el escaneo de productos.</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3">Totales de la venta:</th>
+                                <td id="total_base_carrito">$0</td>
+                                <td></td>
+                                <td id="total_iva_carrito">$0</td>
+                                <td id="total_pagar_carrito"><strong>$0</strong></td>
+                                <td>
+                                    <button type="button" id="btn_vaciar_carrito" title="Borrar todos los productos del carrito">
+                                        Vaciar Todo
+                                    </button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </article>
+            </section>
 
-                <br><br>
-                <button type="submit">Finalizar Venta y Facturar</button>
-            </form>
+            <section id="seccion_pago">
+                <h2>2. Cierre y Liquidación de Venta</h2>
 
-        </section>
+                <article id="resumen_totales">
+                    <h3>Resumen de Cobro</h3>
+                    <table>
+                        <caption>Desglose según Normativa DIAN 2026</caption>
+                        <tbody>
+                            <tr>
+                                <th>Total Base Gravable:</th>
+                                <td id="resumen_base">$0 COP</td>
+                            </tr>
+                            <tr>
+                                <th>Total IVA Cobrado:</th>
+                                <td id="resumen_iva">$0 COP</td>
+                            </tr>
+                            <tr>
+                                <th>TOTAL A PAGAR:</th>
+                                <td id="resumen_total"><strong>$0 COP</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </article>
+
+                <article id="seccion_medio_pago">
+                    <h3>Procesar Pago</h3>
+                    <form id="formulario_pago" action="#" method="post">
+                        <fieldset>
+                            <legend>Selección de Pago</legend>
+
+                            <label for="tipo_pago">Forma de Pago:</label>
+                            <select name="tipo_pago" id="tipo_pago" required>
+                                <option value="" disabled selected>-- Seleccione cómo paga el cliente --</option>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="nequi">Nequi / Daviplata</option>
+                                <option value="tarjeta">Tarjeta (Datáfono)</option>
+                            </select>
+
+                            <div id="seccion_efectivo" class="panel-dinamico">
+                                <h4>Cálculo de Efectivo</h4>
+                                <label for="dinero_recibido">Efectivo Recibido:</label>
+                                <input type="number" id="dinero_recibido" name="dinero_recibido" min="0" placeholder="$">
+
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <th>Total a Cobrar:</th>
+                                            <td id="vueltas_total_pagar">$0 COP</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Efectivo Entregado:</th>
+                                            <td id="vueltas_recibido">$0 COP</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Vueltas (Cambio):</th>
+                                            <td id="vueltas_cambio"><strong>$0 COP</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="seccion_nequi" class="panel-dinamico" hidden>
+                                <h4>Validación de Transferencia</h4>
+                                <p>Valor exacto a transferir: <strong id="total_nequi">$0 COP</strong></p>
+                                <label for="referencia_nequi">N° de Comprobante:</label>
+                                <input type="text" id="referencia_nequi" name="referencia_nequi" placeholder="Ej: Código de barras o ID de rastreo">
+                            </div>
+
+                            <div id="seccion_tarjeta" class="panel-dinamico" hidden>
+                                <h4>Validación de Datáfono</h4>
+                                <p>Valor a cobrar en terminal: <strong id="total_tarjeta">$0 COP</strong></p>
+                                <label for="referencia_tarjeta">N° de Aprobación:</label>
+                                <input type="text" id="referencia_tarjeta" name="referencia_tarjeta" placeholder="Ej: Código del voucher">
+                            </div>
+
+                            <br>
+                            <button type="submit" id="btn_finalizar_venta">Registrar Venta e Imprimir</button>
+                            <button type="button" id="btn_cancelar_venta">Anular Operación</button>
+                        </fieldset>
+                    </form>
+                </article>
+            </section>
+
+            <section id="tiquete_venta" hidden>
+                <h2>3. Comprobante Generado</h2>
+                <article id="contenido_tiquete">
+                    <header>
+                        <h3>MY_BUSINESS S.A.S</h3>
+                        <p id="tiquete_nit">NIT: —</p>
+                        <p id="tiquete_direccion">Dirección: —</p>
+                        <p>Responsable de IVA</p>
+                    </header>
+                    <hr>
+                    <p>Factura N°: <strong id="tiquete_numero">—</strong></p>
+                    <p>Fecha: <strong id="tiquete_fecha">—</strong> | Hora: <strong id="tiquete_hora">—</strong></p>
+                    <p>Cajero: <strong id="tiquete_cajero">—</strong> | Pago: <strong id="tiquete_medio_pago">—</strong></p>
+                    <hr>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cant.</th>
+                                <th>Precio</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla_tiquete"></tbody>
+                    </table>
+                    <hr>
+                    <p>Gracias por su compra.</p>
+                    <p><small>Soporte interno conforme a normativa DIAN 2026</small></p>
+                </article>
+                <button type="button" id="btn_imprimir_tiquete">Imprimir Copia</button>
+                <button type="button" id="btn_nueva_venta">Iniciar Nueva Transacción</button>
+            </section>
+        </div>
+
+        <aside class="herramientas_auxiliares">
+
+            <section id="consulta_precio_rapida">
+                <h2>Verificador de Precios</h2>
+                <p>Uso exclusivo para resolver dudas del cliente sin alterar la venta actual.</p>
+                <form id="formulario_consulta_precio" action="#" method="get">
+                    <fieldset>
+                        <legend>Consultar Artículo</legend>
+                        <label for="buscar_precio_sku">SKU o Palabra Clave:</label>
+                        <input type="search" id="buscar_precio_sku" name="buscar_precio_sku" placeholder="Ej: Arroz, Aceite...">
+                        <button type="button" id="btn_consultar_precio">Buscar Precio</button>
+                    </fieldset>
+                </form>
+                <div id="resultado_consulta_precio">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Producto</th>
+                                <th>Precio Final</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla_consulta_precio">
+                            <tr>
+                                <td colspan="4">Esperando consulta...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="calculadora_rapida">
+                <h2>Calculadora de Mostrador</h2>
+                <form id="formulario_calculadora" action="#" method="get">
+                    <fieldset>
+                        <legend>Operaciones Rápidas</legend>
+                        <output id="pantalla_calculadora">0</output>
+                        
+                        <div class="teclado_calculadora">
+                            <button type="button" class="btn_calc" data-valor="7">7</button>
+                            <button type="button" class="btn_calc" data-valor="8">8</button>
+                            <button type="button" class="btn_calc" data-valor="9">9</button>
+                            <button type="button" class="btn_calc" data-valor="/">÷</button>
+                            
+                            <button type="button" class="btn_calc" data-valor="4">4</button>
+                            <button type="button" class="btn_calc" data-valor="5">5</button>
+                            <button type="button" class="btn_calc" data-valor="6">6</button>
+                            <button type="button" class="btn_calc" data-valor="*">×</button>
+                            
+                            <button type="button" class="btn_calc" data-valor="1">1</button>
+                            <button type="button" class="btn_calc" data-valor="2">2</button>
+                            <button type="button" class="btn_calc" data-valor="3">3</button>
+                            <button type="button" class="btn_calc" data-valor="-">−</button>
+                            
+                            <button type="button" class="btn_calc" data-valor="0">0</button>
+                            <button type="button" class="btn_calc" data-valor=".">.</button>
+                            <button type="button" id="btn_calc_igual">=</button>
+                            <button type="button" class="btn_calc" data-valor="+">+</button>
+                        </div>
+                        <div class="funciones_calculadora">
+                            <button type="button" id="btn_calc_borrar">Borrar</button>
+                            <button type="button" id="btn_calc_limpiar">Limpiar (C)</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </section>
+
+        </aside>
+
     </main>
 
     <footer>
-        <p>MY_BUSINESS - Yesid Alexander Sanabria Desarrollador</p>
-        <p>Terminal de Ventas - Facatativá, Cundinamarca</p>
-
+        <p>MY_BUSINESS - Terminal de Ventas</p>
+        <p>Facatativá, Cundinamarca — Colombia</p>
+        <p>Desarrollado por: <strong>Yesid Alexander Sanabria Ávila</strong></p>
     </footer>
-    <script src="auth.js"></script>
-    <script src="ventas.js"></script>
+
+    <script src="js/app.js"></script>
 </body>
 
 </html>

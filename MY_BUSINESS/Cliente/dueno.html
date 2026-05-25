@@ -9,73 +9,573 @@
 
 <body>
     <header>
-        <h1>MY_BUSINESS: Panel de Control Gerencia</h1>
-        <nav>
-            <ul>
-                <li><a href="ventas.html">Ir a Ventas</a></li>
-                <li><a href="inventario.html">Ir a Inventario</a></li>
-                <button type="button" onclick="cerrar_sesion()">Cerrar Sesión</button>
-            </ul>
-        </nav>
+        <h1>MY BUSINESS</h1>
+        <p>Panel de Administración Global - Vista del Propietario</p>
+        <div>
+            <button type="button" id="btn_cerrar_sesion_top" onclick="cerrar_sesion()">Cerrar Sesión</button>
+        </div>
     </header>
 
     <main>
-        <section>
-            <h2>Resumen de Rendimiento en Tiempo Real</h2>
-            <div role="group">
-                <article>
-                    <h3>Venta Total del Mes</h3>
-                    <p><strong>$12.500.000 cop</strong></p>
+        <section id="contenedor_principal">
+            <h2 id="saludo_propietario">Bienvenido, [Nombre del Dueño]</h2>
+            <p>Estado operativo actual y herramientas de control global del establecimiento bajo la normativa comercial colombiana.</p>
+        </section>
+
+        <hr>
+
+        <section id="alertas_sistema">
+            <h2>Alertas del Sistema</h2>
+            <aside>
+                <ul>
+                    <li><strong>CRÍTICO:</strong> 5 Productos están por debajo de la cantidad mínima en bodega.</li>
+                    <li><strong>Recordatorio:</strong> Quedan 5 días para el cierre contable del mes.</li>
+                    <li><strong>ALERTA FINANCIERA:</strong> Descuadre de caja detectado en el Punto de Venta 1 por -$45.000 COP en el arqueo de ayer.</li>
+                    <li><strong>TALENTO HUMANO:</strong> El empleado Juan Pérez (Operario) no ha registrado su ingreso el día de hoy.</li>
+                    <li><strong>AUDITORÍA:</strong> Se detectó un intento de modificación de precio en el producto "Código 024" sin autorización del administrador.</li>
+                </ul>
+            </aside>
+        </section>
+
+        <hr>
+
+        <nav id="navegacion_global">
+            <h2>Panel de Navegación Global</h2>
+            <p>Seleccione un módulo para operar el sistema con permisos globales:</p>
+            <ul>
+                <li><a href="ventas.html">Ir a Ventas (Operario)</a></li>
+                <li><a href="inventario.html">Ir a Inventario</a></li>
+                <li><a href="panel_administrativo.html">Ir a Contabilidad (Contador)</a></li>
+                <li><a href="#configuracion_empresa">Configuración de Empresa</a></li>
+            </ul>
+        </nav>
+
+        <hr>
+
+        <section id="resumen_rendimiento">
+            <h2>Resumen de Rendimiento Financiero</h2>
+            <p>Monitoreo del estado financiero y flujo de caja de la empresa.</p>
+
+            <fieldset id="buscador_fechas_rendimiento">
+                <legend>Filtrar Reporte Financiero y Tributario</legend>
+                <form id="form_filtro_fechas">
+                    <label for="fecha_inicio">Desde:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+
+                    <label for="fecha_fin">Hasta:</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" required>
+
+                    <button type="button" id="btn_filtrar_fechas">Consultar Rango</button>
+                </form>
+            </fieldset>
+
+            <br>
+
+            <div role="group" class="contenedor_tarjetas_financieras">
+                <article class="tarjeta_indicador">
+                    <h3>Venta Total del Mes (Bruta)</h3>
+                    <p><data value="12500000"><strong>$12.500.000 COP</strong></data></p>
+                    <small>Total facturado en el rango de fecha seleccionado</small>
                 </article>
 
-                <article>
-                    <h3>Costo de Mercancia Vendida</h3>
-                    <p><strong>$7.200.000</strong></p>
+                <article class="tarjeta_indicador">
+                    <h3>Costo de Mercancía Vendida (CMV)</h3>
+                    <p><data value="7200000"><strong>$7.200.000 COP</strong></data></p>
+                    <small>Inversión en inventario salido del negocio</small>
                 </article>
 
-                <article>
-                    <h3>Ganancia neta</h3>
-                    <p><strong>$5.300.000</strong></p>
+                <article class="tarjeta_indicador">
+                    <h3>Ganancia Neta (Utilidad)</h3>
+                    <p><data value="5300000"><strong>$5.300.000 COP</strong></data></p>
+                    <small>Dinero libre antes de obligaciones tributarias (DIAN)</small>
+                </article>
+
+                <article class="tarjeta_indicador">
+                    <h3>Margen de Rentabilidad</h3>
+                    <p><data value="42.4"><strong>42.4%</strong></data></p>
+                    <small>Efectividad y salud comercial del negocio</small>
+                </article>
+
+                <article class="tarjeta_indicador">
+                    <h3>Efectivo en Caja General</h3>
+                    <p><data value="3800000"><strong>$3.800.000 COP</strong></data></p>
+                    <small>Dinero físico disponible para arqueo de caja inmediato</small>
                 </article>
             </div>
         </section>
 
         <hr>
 
-        <section>
-            <h2>Gestion de Usuarios y Roles</h2>
-            <p>Desde aca puede crear o eliminar el acceso a sus empleados.</p>
+        <section id="administracion_tributaria">
+            <h2>Impuestos, Retefuente y Reportes Tributarios</h2>
+            <p>Gestión de obligaciones fiscales de la empresa de acuerdo con la normativa de la DIAN.</p>
 
             <article>
-                <h3>Registar Nuevo Empleado</h3>
+                <h3>Configuración de IVA e ICA</h3>
+                <form id="formulario_configuracion_impuestos">
+                    <fieldset>
+                        <legend>Tarifas Estatales y Municipales</legend>
+
+                        <label for="tarifa_iva_general">Tarifa IVA General (%):</label>
+                        <input type="number" id="tarifa_iva_general" name="tarifa_iva_general" value="19" placeholder="Ej: 19" required>
+
+                        <label for="tarifa_ica">Tarifa ICA (por cada $1.000):</label>
+                        <input type="number" id="tarifa_ica" name="tarifa_ica" step="0.001" placeholder="Ej: 11.04" required>
+
+                        <label for="agente_retencion">¿El negocio es Agente de Retención?</label>
+                        <select name="agente_retencion" id="agente_retencion" required>
+                            <option value="no">No</option>
+                            <option value="si">Si (Gran Contribuyente / Régimen Común)</option>
+                        </select>
+
+                        <button type="button" id="btn_actualizar_impuestos">Actualizar Parámetros Tributarios</button>
+                    </fieldset>
+                </form>
+            </article>
+
+            <article>
+                <h3>Resumen de IVA Cobrado por Período</h3>
+                <table>
+                    <caption>Facturación Auxiliar de Ventas e IVA Liquidado</caption>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Comprobante</th>
+                            <th>Base Gravable</th>
+                            <th>Tarifa Aplicada</th>
+                            <th>IVA Liquidado</th>
+                            <th>Total Transacción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_iva_cuerpo">
+                        <tr>
+                            <td>24-04-2026</td>
+                            <td>FAC-0001</td>
+                            <td>$100.000 COP</td>
+                            <td>19%</td>
+                            <td>$19.000 COP</td>
+                            <td>$119.000 COP</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">Total IVA a declarar en este periodo:</th>
+                            <td colspan="2"><strong>$19.000 COP</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </article>
+        </section>
+
+        <hr>
+
+        <section id="nomina_empleados">
+            <h2>Nómina y Pagos de Personal</h2>
+            <p>Liquidación salarial según normativa laboral colombiana vigente 2026.</p>
+
+            <form id="formulario_nomina" action="procesar_nomina.php" method="post">
+                <article id="formulario_liquidacion">
+                    <h3>Datos del Empleado a Liquidar</h3>
+                    <fieldset>
+                        <legend>Información del Pago</legend>
+
+                        <label for="id_usuario">Empleado:</label>
+                        <select id="id_usuario" name="id_usuario" required>
+                            <option value="" disabled selected>-- Seleccione el empleado --</option>
+                            <option value="1">Juan Pérez (Operario)</option>
+                        </select>
+
+                        <label for="periodo_mes">Período de Nómina:</label>
+                        <input type="month" id="periodo_mes" name="periodo_mes" required>
+
+                        <label for="tipo_pago">Tipo de Pago:</label>
+                        <select id="tipo_pago" name="tipo_pago" required>
+                            <option value="mensual">Salario Mensual Fijo</option>
+                            <option value="dias">Por Días Trabajados</option>
+                            <option value="turno">Por Turno</option>
+                        </select>
+
+                        <label for="frecuencia_corte">Frecuencia de Corte:</label>
+                        <select id="frecuencia_corte" name="frecuencia_corte" required>
+                            <option value="quincenal" selected>Quincenal (Cortes cada 15 días)</option>
+                            <option value="mensual">Mensual (Corte de mes completo)</option>
+                        </select>
+
+                        <label for="salario_base_input">Salario Mínimo / Pactado Base:</label>
+                        <input type="number" id="salario_base_input" name="salario_base" placeholder="Ej: 1423500" required min="0">
+
+                        <label for="dias_trabajados">Días Laborados en este Corte:</label>
+                        <input type="number" id="dias_trabajados" name="dias_trabajados" value="13" min="0" max="15">
+
+                        <label for="nivel_arl">Nivel de Riesgo ARL (Empresa):</label>
+                        <select id="nivel_arl" name="nivel_arl" required>
+                            <option value="0.522">Nivel I - 0.522% (Oficina / Riesgo Mínimo)</option>
+                            <option value="1.044">Nivel II - 1.044% (Riesgo Bajo)</option>
+                            <option value="2.436">Nivel III - 2.436% (Riesgo Medio)</option>
+                            <option value="4.350">Nivel IV - 4.350% (Riesgo Alto)</option>
+                            <option value="6.960">Nivel V - 6.960% (Riesgo Máximo)</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <br>
+
+                <article id="tabla_liquidacion">
+                    <h3>Liquidación Detallada de Nómina</h3>
+                    <table>
+                        <caption>Resumen completo de nómina según Ley Laboral Colombiana 2026</caption>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Base de Cálculo</th>
+                                <th>Porcentaje / Detalle</th>
+                                <th>Cantidad Horas / Días</th>
+                                <th>Empleado Paga</th>
+                                <th>Empresa Paga</th>
+                                <th>Valor Calculado ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th colspan="7" class="subtitulo-seccion">DEVENGADO</th>
+                            </tr>
+                            <tr>
+                                <td>Salario Básico Calculado</td>
+                                <td>Días asistidos</td>
+                                <td>100%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="salario_base_calculado" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Auxilio de Transporte</td>
+                                <td>Fijo Legal</td>
+                                <td>Menos de 2 SMLMV</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="auxilio_transporte" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Horas Extras Diurnas</td>
+                                <td>Hora Ordinaria x 1.25</td>
+                                <td>25% Extra</td>
+                                <td><input type="number" name="cant_he_diurnas" value="0" min="0" class="input-cantidad"></td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="he_diurnas" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Horas Extras Nocturnas</td>
+                                <td>Hora Ordinaria x 1.75</td>
+                                <td>75% Extra</td>
+                                <td><input type="number" name="cant_he_nocturnas" value="0" min="0" class="input-cantidad"></td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="he_nocturnas" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Horas Extras Dominicales</td>
+                                <td>Hora Ordinaria x 2.00</td>
+                                <td>100% Extra</td>
+                                <td><input type="number" name="cant_he_dominicales" value="0" min="0" class="input-cantidad"></td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="he_dominicales" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TOTAL DEVENGADO</strong></td>
+                                <td colspan="5"></td>
+                                <td><input type="number" name="total_devengado" value="0" readonly class="texto-negrita"></td>
+                            </tr>
+
+                            <tr>
+                                <th colspan="7" class="subtitulo-seccion">DEDUCCIONES AL EMPLEADO</th>
+                            </tr>
+                            <tr>
+                                <td>Salud Empleado</td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>Asume Empleado</td>
+                                <td>—</td>
+                                <td><input type="number" name="salud_empleado" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Pensión Empleado</td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>Asume Empleado</td>
+                                <td>—</td>
+                                <td><input type="number" name="pension_empleado" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Faltantes de Caja / Pérdidas</td>
+                                <td>Monto directo</td>
+                                <td>Cobro operativo</td>
+                                <td>—</td>
+                                <td>Asume Empleado</td>
+                                <td>—</td>
+                                <td><input type="number" name="descuento_perdidas" value="0" min="0" placeholder="Escribir valor"></td>
+                            </tr>
+                            <tr>
+                                <td>Días No Trabajados (Inasistencia)</td>
+                                <td>Salario Diario</td>
+                                <td>Descuento directo</td>
+                                <td><input type="number" name="descuento_faltas_dias_cant" value="0" min="0" max="30" class="input-cantidad"> Días</td>
+                                <td>Asume Empleado</td>
+                                <td>—</td>
+                                <td><input type="number" name="descuento_faltas_dias" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Sanción Descanso Dominical</td>
+                                <td>Art. 173 C.S.T.</td>
+                                <td>Pérdida por falta</td>
+                                <td>—</td>
+                                <td>Asume Empleado</td>
+                                <td>—</td>
+                                <td><input type="number" name="descuento_dominical_sancion" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TOTAL DEDUCCIONES</strong></td>
+                                <td colspan="5"></td>
+                                <td><input type="number" name="total_deducciones" value="0" readonly class="texto-negrita"></td>
+                            </tr>
+                            <tr class="fila-neto-pagar">
+                                <td><strong>NETO A PAGAR AL EMPLEADO</strong></td>
+                                <td colspan="5"></td>
+                                <td><input type="number" name="neto_pagado" value="0" readonly class="texto-negrita"></td>
+                            </tr>
+
+                            <tr>
+                                <th colspan="7" class="subtitulo-seccion">APORTES PARAFISCALES (Empresa)</th>
+                            </tr>
+                            <tr>
+                                <td>Salud Empresa</td>
+                                <td>IBC</td>
+                                <td>8.5%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="salud_empresa" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Pensión Empresa</td>
+                                <td>IBC</td>
+                                <td>12%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="pension_empresa" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>ARL</td>
+                                <td>IBC</td>
+                                <td>Según Nivel</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="arl" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>SENA</td>
+                                <td>IBC</td>
+                                <td>2%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="sena" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>ICBF</td>
+                                <td>IBC</td>
+                                <td>3%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="icbf" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Caja de Compensación</td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="caja_compensacion" value="0" readonly></td>
+                            </tr>
+
+                            <tr>
+                                <th colspan="7" class="subtitulo-seccion">PRESTACIONES SOCIALES (Provisiones)</th>
+                            </tr>
+                            <tr>
+                                <td>Prima de Servicios</td>
+                                <td>Devengado total</td>
+                                <td>8.33%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="prima" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Cesantías</td>
+                                <td>Devengado total</td>
+                                <td>8.33%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="cesantias" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Intereses sobre Cesantías</td>
+                                <td>Sobre Cesantías</td>
+                                <td>1.0% Mensual</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="intereses_cesantias" value="0" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>Vacaciones</td>
+                                <td>Salario Base</td>
+                                <td>4.17%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa Paga</td>
+                                <td><input type="number" name="vacaciones" value="0" readonly></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="fila-total-empresa">
+                                <th colspan="6">COSTO TOTAL EMPRESA:</th>
+                                <td><input type="number" name="costo_total_empresa" value="0" readonly class="texto-negrita"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <br>
+
+                    <button type="submit" id="btn_guardar_nomina_bd">Guardar Nómina en Base de Datos</button>
+                    
+                    <button type="button" id="btn_imprimir_desprendible">Imprimir Desprendible de Pago</button>
+                    <button type="button" id="btn_enviar_correo_desprendible">Enviar Desprendible por Correo al Empleado</button>
+                    <button type="button" id="btn_descargar_nomina_mes">Descargar Resumen de Nómina del Mes</button>
+                </article>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="analisis_productos_estrella">
+            <h2>Análisis y Rotación de Productos</h2>
+            <p>Monitoreo de los artículos que generan mayor flujo de caja y alertas de inventario estancado.</p>
+
+            <article id="productos_mas_vendidos">
+                <h3>Top 3 Productos Más Vendidos</h3>
+                <ol>
+                    <li>
+                        <strong>Arroz Diana Premium 1kg</strong> -
+                        <data value="1420">1,420 unidades vendidas</data>
+                        <small>(Generó: $4.260.000 COP)</small>
+                    </li>
+                    <li>
+                        <strong>Aceite Gourmet Frito Perfecto 1L</strong> -
+                        <data value="890">890 unidades vendidas</data>
+                        <small>(Generó: $3.115.000 COP)</small>
+                    </li>
+                    <li>
+                        <strong>Café Sello Rojo 500g</strong> -
+                        <data value="750">750 unidades vendidas</data>
+                        <small>(Generó: $1.875.000 COP)</small>
+                    </li>
+                </ol>
+            </article>
+
+            <article id="productos_baja_rotacion">
+                <h3>Productos Estancados (Sin movimientos hace más de 30 días)</h3>
+                <table>
+                    <caption>Artículos acumulando costo en bodega</caption>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descripción del Producto</th>
+                            <th>Stock Quieto</th>
+                            <th>Costo Estancado</th>
+                            <th>Acción Sugerida</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_baja_rotacion_cuerpo">
+                        <tr>
+                            <td>PROD-098</td>
+                            <td>Salsa de Tomate Familiar X marca</td>
+                            <td>45 unidades</td>
+                            <td>$180.000 COP</td>
+                            <td><button type="button" class="btn_promocion">Crear Combo / Oferta</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+
+        <hr>
+
+        <section id="gestion_usuarios">
+            <h2>Gestión de Usuarios y Roles</h2>
+            <p>Desde acá puede crear o suspender el acceso de sus empleados al sistema.</p>
+
+            <article>
+                <h3>Registrar Nuevo Empleado</h3>
                 <form id="formulario_crear_usuario" action="#" method="post">
-                    <label for="nombre_empleado">Nombre Completo:</label>
-                    <input type="text" name="nombre_completo" id="nombre_completo" required>
+                    <fieldset>
+                        <legend>Datos de Contratación y Acceso Legal</legend>
 
-                    <label for="correo_electronico">Correo Electrónico:</label>
-                    <input type="email" name="correo_electronico" id="correo_electronico" required>
+                        <label for="empleado_cedula">Cédula de Ciudadanía (C.C.):</label>
+                        <input type="text" name="empleado_cedula" id="empleado_cedula"
+                            inputmode="numeric" pattern="[0-9]+"
+                            placeholder="Ej: 1002345678" required>
 
-                    <label for="rol_empleados">Asignar Rol De:</label>
-                    <select name="rol_empleados" id="rol_empleados">
-                        <option value="vendedor">Vendedor / Operario</option>
-                        <option value="contador">Contador</option>
-                        <option value="admin">Administrador De Punto</option>
-                    </select>
+                        <label for="nombre_completo">Nombre Completo:</label>
+                        <input type="text" name="nombre_completo" id="nombre_completo"
+                            placeholder="Ej: Carlos Alberto Gómez" required>
 
-                    <label for="clave_unicax">Contraseña</label>
-                    <input type="password" id="clave_unica" name="clave_unica" required>
+                        <label for="correo_electronico">Correo Electrónico:</label>
+                        <input type="email" name="correo_electronico" id="correo_electronico"
+                            placeholder="Ej: carlos.gomez@mybusiness.com" required>
 
-                    <button type="submit">Crear Usuario</button>
+                        <label for="rol_empleados">Asignar Rol y Permisos De:</label>
+                        <select name="rol_empleados" id="rol_empleados" required>
+                            <option value="" disabled selected>-- Seleccione el rol del trabajador --</option>
+                            <optgroup label="Nivel Administrativo">
+                                <option value="Dueño">Dueño / Administrador Global</option>
+                                <option value="Contador">Contador / Auditor Financiero</option>
+                            </optgroup>
+                            <optgroup label="Nivel Operativo">
+                                <option value="Operario">Operario / Cajero / Vendedor</option>
+                            </optgroup>
+                        </select>
 
+                        <label for="clave_unica">Contraseña Asignada:</label>
+                        <input type="password" id="clave_unica" name="clave_unica"
+                            placeholder="Mínimo 6 caracteres" required>
+
+                        <label for="clave_unica_confirmar">Confirmar Contraseña:</label>
+                        <input type="password" id="clave_unica_confirmar" name="clave_unica_confirmar"
+                            placeholder="Repita la contraseña asignada" required>
+
+                        <button type="submit">Crear Usuario</button>
+                    </fieldset>
                 </form>
             </article>
 
             <article>
                 <h3>Usuarios Activos</h3>
-                <table border="1">
-                    <caption>Lista de Personal Con acceso al sistema</caption>
+                <table>
+                    <caption>Lista de Personal con acceso al sistema</caption>
                     <thead>
                         <tr>
+                            <th>Cédula</th>
                             <th>Nombre</th>
                             <th>Rol</th>
                             <th>Último Ingreso</th>
@@ -83,44 +583,42 @@
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tabla_usuarios_cuerpo">
                         <tr>
+                            <td>1002345678</td>
                             <td>Juan Pérez</td>
-                            <td>Vendedor</td>
-                            <td>Hoy - 08:00 am </td>
+                            <td><strong>Operario</strong> (Solo Ventas)</td>
+                            <td>Hoy - 08:00 am</td>
                             <td>Activo</td>
-                            <td><button type="button">Suspender</button></td>
+                            <td>
+                                <button type="button" class="btn_suspender" data-cedula="1002345678">Suspender</button>
+                            </td>
                         </tr>
-
                     </tbody>
                 </table>
             </article>
-
-        </section>
-
-        <hr>
-
-        <section>
-            <h2>Alertas del Sistema</h2>
-            <aside>
-                <ul>
-                    <li><strong>CRÍTICO:</strong>5 Productos estan por debajo de la cantidad mínima.</li>
-                    <li><strong>Recordatorio:</strong>Quedan 5 dias para el cierre contable.</li>
-                </ul>
-            </aside>
         </section>
     </main>
+   
+        <hr>
 
     <footer>
-        <p>MY_BUSINESS - Informacion Totalmente Confidencial Del Propietario</p>
-        <p>MY_BUSINESS - Desarrollado por Alexander Sanabria Ávila</p>
+        <nav id="utilidades_sistema">
+            <h3>Herramientas Avanzadas del Sistema</h3>
+            <ul>
+                <li><a href="#">Descargar Backup Completo de la Base de Datos (SQL)</a></li>
+                <li><a href="#">Manual de Usuario Contable y Operativo</a></li>
+            </ul>
+        </nav>
+        <br>
+        <div>
+            <button type="button" id="btn_cerrar_sesion_bottom" onclick="cerrar_sesion()">Cerrar Sesión Global</button>
+        </div>
+        <br>
+        <p>MY_BUSINESS - Información Altamente Confidencial del Propietario.</p>
+        <p>Este sistema cumple con la Ley 1581 de 2012 (Habeas Data) para el tratamiento seguro de datos de personal y clientes en Colombia.</p>
+        <p>Desarrollado de manera profesional por: <strong>Alexander Sanabria Ávila</strong></p>
     </footer>
-
-
-    <script src="auth.js" defer></script>
-    <script src="dueno.js" defer></script>
-
 </body>
-
 
 </html>

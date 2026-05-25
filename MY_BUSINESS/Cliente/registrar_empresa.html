@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Empresa</title>
+</head>
+
+<body>
+
+    <article id="seccion_crear_empresa">
+        <h2>Registrar Nueva Empresa</h2>
+        <form id="formulario_crear_empresa">
+
+            <fieldset>
+                <legend>Datos de la Empresa</legend>
+
+                <label for="empresa_nit">NIT de la Empresa:</label>
+                <input type="text" id="empresa_nit" name="empresa_nit" placeholder="Ej: 900.123.456-7" required>
+
+                <label for="empresa_nombre">Nombre Comercial de la Empresa:</label>
+                <input type="text" id="empresa_nombre" name="empresa_nombre"
+                    placeholder="Ej: Distribuidora Libélula S.A.S." required>
+
+                <label for="empresa_telefono">Teléfono de la Empresa:</label>
+                <input type="tel" id="empresa_telefono" name="empresa_telefono" placeholder="Ej: 6013214567" required>
+
+                <label for="empresa_ciudad">Ciudad / Ubicación:</label>
+                <input type="text" id="empresa_ciudad" name="empresa_ciudad" placeholder="Ej: Facatativá, Cundinamarca"
+                    required>
+            </fieldset>
+
+            <fieldset>
+                <legend>Datos del Dueño / Representante Legal</legend>
+
+                <label for="dueno_identificacion">Identificación del Dueño (C.C.):</label>
+                <input type="text" id="dueno_identificacion" name="dueno_identificacion" placeholder="Ej: 1001234567"
+                    required>
+
+                <label for="dueno_nombre">Nombre Completo del Dueño:</label>
+                <input type="text" id="dueno_nombre" name="dueno_nombre" placeholder="Ej: Juan Carlos Pérez Gómez"
+                    required>
+
+                <label for="dueno_telefono">Teléfono de Contacto del Dueño:</label>
+                <input type="tel" id="dueno_telefono" name="dueno_telefono" placeholder="Ej: 3101234567" required>
+
+                <label for="dueno_correo">Correo Electrónico (Para Iniciar Sesión):</label>
+                <input type="email" id="dueno_correo" name="dueno_correo" placeholder="Ej: dueño@mybusiness.com"
+                    required>
+ 
+                <label for="dueno_clave">Contraseña de Acceso:</label>
+                <input type="password" id="dueno_clave" name="dueno_clave" placeholder="Mínimo 8 caracteres" required>
+
+                <label for="dueno_clave_confirmar">Confirmar Contraseña:</label>
+                <input type="password" id="dueno_clave_confirmar" name="dueno_clave_confirmar"
+                    placeholder="Repita su contraseña" required>
+
+                <br><br>
+
+                <input type="checkbox" id="dueno_terminos" name="dueno_terminos" required>
+                <label for="dueno_terminos">Acepto los términos, condiciones y la política de tratamiento de datos
+                    personales.</label>
+            </fieldset>
+
+            <button type="submit">Registrar Empresa y Dueño</button>
+
+        </form>
+    </article>
+
+</body>
+
+</html>

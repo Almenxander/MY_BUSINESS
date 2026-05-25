@@ -1,1 +1,0 @@
-verificar_sesion('Contador');

@@ -4,64 +4,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MY_BUSINESS -INICIAR SESION</title>
+    <title>MY_BUSINESS - Iniciar Sesión</title>
 </head>
 
 <body>
+
+    <header>
+        <h1>MY_BUSINESS</h1>
+        <p>Sistema Contable para Pequeños y Grandes Negocios de Colombia</p>
+    </header>
+ 
     <main>
-        <section>
-            <header>
-                <h1>MY BUSINESS</h1>
-                <p>Sistema CONTABLE para pequeños y grandes negocios</p>
-            </header>
+        <hr>
+        <section id="seccion_acceso">
 
             <article id="seccion_login">
                 <h2>Acceso al Sistema</h2>
+                <p>Ingresa con tu correo y contraseña para acceder al sistema.</p>
                 <form id="formulario_login" action="#" method="post">
                     <fieldset>
                         <legend>Datos de Identificación</legend>
 
-                        <label for="usuario_correo">Correo Institucional o usuario:</label>
-                        <input type="email" id="usuario_correo" name="usuario_correo" required>
+                        <label for="usuario_correo">Correo Institucional:</label>
+                        <input type="email" id="usuario_correo" name="usuario_correo"
+                            placeholder="Ej: admin@minegocio.com" required>
 
                         <label for="usuario_clave">Contraseña:</label>
-                        <input type="password" id="usuario_clave" name="usuario_clave" required>
+                        <input type="password" id="usuario_clave" name="usuario_clave"
+                            placeholder="Ingrese su contraseña" required>
 
-                        <button type="submit">Ingresar</button>
-                    </fieldset>
-
-                </form>
-            </article>
-            <article id="seccion_primer_uso" style="display:none">
-                <h2>Configuración Inicial del Sistema</h2>
-                <p>Bienvenido. Crea la cuenta del propietario para comenzar.</p>
-                <form id="formulario_primer_uso" action="#" method="post">
-                    <fieldset>
-                        <legend>Datos del Propietario</legend>
-
-                        <label for="nombre_completo">Nombre Completo:</label>
-                        <input type="text" id="nombre_completo" name="nombre_completo" required>
-
-                        <label for="correo_electronico">Correo Electrónico:</label>
-                        <input type="email" id="correo_electronico" name="correo_electronico" required>
-
-                        <label for="clave_unica">Contraseña:</label>
-                        <input type="password" id="clave_unica" name="clave_unica" required>
-
-                        <button type="submit">Crear cuenta y entrar</button>
+                        <button type="submit">Ingresar al Sistema</button>
                     </fieldset>
                 </form>
-            </article>
 
-            <nav>
-                <ul>
-                    <li><a href="#">¿Olvido su contraseña?</a></li>
-                    <li><a href="#">Soporte Tecnico</a></li>
-                </ul>
-            </nav>
+                <nav>
+                    <ul>
+                        <li><a href="#" id="enlace_olvido_clave">¿Olvidó su contraseña?</a></li>
+                        <li><a href="#seccion_registro">¿Eres nuevo? Registra tu negocio aquí</a></li>
+                    </ul>
+                </nav>
+            </article>
 
         </section>
+
+        <hr>
+
+        <section id="seccion_bienvenida">
+            <h2>¿Qué es MY_BUSINESS?</h2>
+            <p>MY_BUSINESS es una plataforma contable diseñada para que los comerciantes y emprendedores colombianos
+                gestionen sus ventas, controlen su inventario y cumplan con sus obligaciones tributarias ante la DIAN de
+                manera fácil y segura.</p>
+
+            <article id="caracteristicas_sistema">
+                <h3>¿Qué puedes hacer con MY_BUSINESS?</h3>
+                <ul>
+                    <li>Registrar y controlar tus ventas diarias con cálculo automático de IVA</li>
+                    <li>Gestionar tu inventario con alertas de stock mínimo</li>
+                    <li>Liquidar la nómina de tus empleados según la ley colombiana</li>
+                    <li>Generar reportes tributarios para presentar ante la DIAN</li>
+                    <li>Controlar el cierre de caja y arqueo diario</li>
+                    <li>Gestionar usuarios con roles y permisos diferenciados</li>
+                </ul>
+            </article>
+        </section>
+
+        <hr>
+
+        <section id="seccion_registro">
+            <h2>¿Eres nuevo en MY_BUSINESS?</h2>
+            <p>Registra tu negocio y comienza a gestionar tu contabilidad de manera profesional. El registro es gratuito
+                y solo toma unos minutos.</p>
+
+            <article>
+                <h3>Beneficios de registrarte:</h3>
+                <ul>
+                    <li>Acceso inmediato al sistema</li>
+                    <li>Sin costos de instalación</li>
+                    <li>Cumple con la normativa DIAN 2026</li>
+                    <li>Soporte técnico incluido</li>
+                    <li>Protección de datos según Ley 1581 de 2012</li>
+                </ul>
+            </article>
+
+            <a href="#" id="enlace_crear_empresa">
+                <button type="button">Registrar mi Negocio</button>
+            </a>
+        </section>
+
     </main>
+
+    <hr>
+
+    <footer>
+        <section id="informacion_soporte">
+            <h3>¿Necesitas ayuda?</h3>
+            <address>
+                <p>Soporte Técnico MY_BUSINESS:</p>
+                <ul>
+                    <li>Correo: <a href="mailto:soporte@mybusiness.com.co">soporte@mybusiness.com.co</a></li>
+                    <li>WhatsApp: <a href="tel:+573001234567">+57 300 123 4567</a></li>
+                    <li>Horario: Lunes a Viernes 8:00 am - 6:00 pm</li>
+                </ul>
+            </address>
+        </section>
+
+        <hr>
+
+        <section id="informacion_legal">
+            <h3>Información Legal</h3>
+            <p>Este sistema cumple con la <strong>Ley 1581 de 2012</strong> (Habeas Data) para el tratamiento seguro y
+                confidencial de datos personales en Colombia.</p>
+            <nav>
+                <ul>
+                    <li><a href="#">Términos y Condiciones</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                    <li><a href="#">Política de Tratamiento de Datos</a></li>
+                </ul>
+            </nav>
+        </section>
+
+        <hr>
+
+        <p>MY_BUSINESS © 2026 - Sistema de Gestión Contable para Colombia.</p>
+        <p>Desarrollado por: <strong>Yesid Alexander Sanabria Ávila</strong></p>
+        <p>Técnico en Programación de Software - SENA Regional Cundinamarca</p>
+    </footer>
 
     <script src="login.js"></script>
 

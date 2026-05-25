@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olvido Contraseña</title>
+</head>
+
+<body>
+    <article id="seccion_olvido_clave">
+        <h2>Restablecer Contraseña</h2>
+        <p>Ingrese sus datos para verificar su cuenta y enviar un enlace de recuperación.</p>
+ 
+        <form id="formulario_olvido_clave">
+            <fieldset>
+                <legend>Recuperación de Acceso</legend>
+
+                <label for="recuperar_usuario">Correo Electrónico o Usuario registrado:</label>
+                <input type="text" id="recuperar_usuario" name="recuperar_usuario"
+                    placeholder="Ej: admin@mybusiness.com o juan123" required>
+
+                <label for="recuperar_nit">NIT de la Empresa vinculada:</label>
+                <input type="text" id="recuperar_nit" name="recuperar_nit" placeholder="Ej: 900.123.456-7" required>
+
+                <button type="submit">Enviar Enlace de Recuperación</button>
+            </fieldset>
+        </form>
+    </article>
+</body>
+
+</html>
