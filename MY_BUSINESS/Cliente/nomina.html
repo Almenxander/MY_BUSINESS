@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Nómina — MY_BUSINESS</title>
+</head>
+<body>
+
+    <header>
+        <hgroup>
+            <h1>MY_BUSINESS S.A.S.</h1>
+            <p>NIT: 000.000.000-0 | Sistema de Liquidación de Nómina</p>
+        </hgroup>
+        <p>Normativa laboral colombiana vigente — Ley 50/90 · Decreto 1072/2015 · CST</p>
+    </header>
+
+    <hr>
+
+    <main>
+
+
+        <section id="sec_liquidacion" aria-labelledby="titulo_liquidacion">
+            <h2 id="titulo_liquidacion">Nómina y Pagos de Personal</h2>
+            <p>Liquidación salarial según normativa laboral colombiana vigente 2026.
+               Los campos marcados con <abbr title="obligatorio">*</abbr> son requeridos.</p>
+
+            <form id="formulario_nomina" action="procesar_nomina.php" method="post"
+                  novalidate aria-describedby="nota_legal">
+
+                <p id="nota_legal">
+                    <small>
+                        SMLMV 2026: $<data value="1423500">1.423.500</data> |
+                        Auxilio de Transporte 2026: $<data value="200000">200.000</data> |
+                        Umbral 2 SMLMV (sin auxilio): $<data value="2847000">2.847.000</data>
+                    </small>
+                </p>
+
+                <!-- ─── ARTÍCULO 1: DATOS DEL EMPLEADO ─── -->
+                <article id="art_datos_empleado" aria-labelledby="titulo_datos_empleado">
+                    <h3 id="titulo_datos_empleado">1. Datos del Empleado</h3>
+
+                    <fieldset>
+                        <legend>Identificación</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN: Al seleccionar empleado, el backend debe
+                            retornar y pre-llenar:
+                              - salario_base, tipo_contrato, fecha_ingreso,
+                                cargo, centro_costos, nivel_arl, eps, fondo_pension,
+                                caja_compensacion_nombre, tipo_cotizante
+                        -->
+                        <label for="id_empleado">Empleado: <abbr title="obligatorio">*</abbr></label>
+                        <select id="id_empleado" name="id_empleado" required
+                                aria-describedby="ayuda_empleado"
+                                autocomplete="off">
+                            <option value="" disabled selected>— Seleccione el empleado —</option>
+                            <optgroup label="Área Operativa">
+                                <option value="1">Juan Pérez · CC 12345678 · Operario</option>
+                            </optgroup>
+                            <optgroup label="Área Administrativa">
+                                <option value="2">María López · CC 87654321 · Coordinadora</option>
+                            </optgroup>
+                        </select>
+                        <small id="ayuda_empleado">
+                            Al seleccionar, se cargarán automáticamente los datos del contrato.
+                        </small>
+
+                        <label for="cedula_display">Cédula:</label>
+                        <input type="text" id="cedula_display" name="cedula_display"
+                               readonly placeholder="Se carga al seleccionar empleado"
+                               aria-label="Número de cédula del empleado">
+
+                        <label for="cargo_display">Cargo:</label>
+                        <input type="text" id="cargo_display" name="cargo_display"
+                               readonly placeholder="Se carga al seleccionar empleado">
+
+                        <label for="fecha_ingreso_display">Fecha de ingreso:</label>
+                        <input type="date" id="fecha_ingreso_display" name="fecha_ingreso_display"
+                               readonly aria-label="Fecha de ingreso del empleado">
+
+                        <label for="centro_costos">Centro de costos:</label>
+                        <select id="centro_costos" name="centro_costos" required>
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="ADM">Administrativo</option>
+                            <option value="OPE">Operativo / Producción</option>
+                            <option value="VEN">Ventas</option>
+                            <option value="LOG">Logística</option>
+                        </select>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Tipo de Contrato y Régimen</legend>
+
+                        <label for="tipo_contrato">Tipo de contrato:</label>
+                        <select id="tipo_contrato" name="tipo_contrato" required>
+                            <option value="termino_indefinido" selected>Término indefinido</option>
+                            <option value="termino_fijo">Término fijo</option>
+                            <option value="obra_labor">Obra o labor</option>
+                            <option value="aprendizaje">Aprendizaje (SENA)</option>
+                        </select>
+
+                        <!--
+                            AUTOMATIZACIÓN CRÍTICA: Si tipo_salario = "integral",
+                            deshabilitar auxilio_transporte, SENA, ICBF, caja_compensacion.
+                            El salario integral incorpora un 30% de factor prestacional.
+                            Base IBC para salario integral = 70% del salario pactado.
+                        -->
+                        <label for="tipo_salario">Modalidad salarial:</label>
+                        <select id="tipo_salario" name="tipo_salario" required>
+                            <option value="ordinario" selected>Ordinario</option>
+                            <option value="integral">Integral (≥ 13 SMLMV)</option>
+                        </select>
+
+                        <!--
+                            AUTOMATIZACIÓN: tipo_cotizante determina si aplica
+                            solidaridad pensional y retención en la fuente.
+                            Cotizante tipo 2 (pensionado trabajando) → no aporta pensión.
+                        -->
+                        <label for="tipo_cotizante">Tipo de cotizante:</label>
+                        <select id="tipo_cotizante" name="tipo_cotizante" required>
+                            <option value="1" selected>1 — Dependiente (empleado regular)</option>
+                            <option value="2">2 — Pensionado trabajando</option>
+                            <option value="12">12 — Aprendiz SENA etapa productiva</option>
+                            <option value="19">19 — Trabajador menor de 28 años (Ley 2040)</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 2: PERÍODO DE NÓMINA ─── -->
+                <article id="art_periodo" aria-labelledby="titulo_periodo">
+                    <h3 id="titulo_periodo">2. Período de Nómina</h3>
+
+                    <fieldset>
+                        <legend>Configuración del Corte</legend>
+
+                        <label for="periodo_mes">Período (mes): <abbr title="obligatorio">*</abbr></label>
+                        <input type="month" id="periodo_mes" name="periodo_mes" required
+                               aria-describedby="ayuda_periodo">
+                        <small id="ayuda_periodo">
+                            Seleccione el mes al que corresponde esta liquidación.
+                        </small>
+
+                        <!--
+                            AUTOMATIZACIÓN: frecuencia_corte + periodo_mes determinan:
+                              - Quincenal 1ra: días 1 al 15
+                              - Quincenal 2da: días 16 al 30 (o último día del mes)
+                              - Mensual: días 1 al 30
+                        -->
+                        <label for="frecuencia_corte">Frecuencia de corte: <abbr title="obligatorio">*</abbr></label>
+                        <select id="frecuencia_corte" name="frecuencia_corte" required>
+                            <option value="quincenal_1" selected>Quincenal — 1ra quincena (días 1 - 15)</option>
+                            <option value="quincenal_2">Quincenal — 2da quincena (días 16 - 30)</option>
+                            <option value="mensual">Mensual (días 1 - 30)</option>
+                        </select>
+
+                        <label for="tipo_liquidacion">Tipo de liquidación:</label>
+                        <select id="tipo_liquidacion" name="tipo_liquidacion" required>
+                            <option value="normal" selected>Normal</option>
+                            <option value="liquidacion_definitiva">Liquidación definitiva (retiro)</option>
+                            <option value="vacaciones">Pago de vacaciones</option>
+                            <option value="prima">Pago de prima</option>
+                        </select>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Días y Tiempo Laborado</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN: días_periodo se calcula según frecuencia_corte.
+                            Quincenal = 15 días. Mensual = 30 días (norma laboral colombiana
+                            usa siempre 30 días, incluso en meses de 28 o 31 días).
+                        -->
+                        <label for="dias_periodo">Días del período:</label>
+                        <input type="number" id="dias_periodo" name="dias_periodo"
+                               value="15" min="1" max="30" readonly
+                               aria-describedby="ayuda_dias_periodo">
+                        <small id="ayuda_dias_periodo">
+                            Se calcula automáticamente según la frecuencia de corte.
+                            La norma laboral colombiana siempre usa base 30 días al mes.
+                        </small>
+
+                        <label for="dias_trabajados">Días efectivamente laborados: <abbr title="obligatorio">*</abbr></label>
+                        <input type="number" id="dias_trabajados" name="dias_trabajados"
+                               value="15" min="0" max="15" required
+                               aria-describedby="ayuda_dias_trabajados">
+                        <small id="ayuda_dias_trabajados">
+                            Incluye sábados si son laborables. No incluya domingos ni festivos
+                            remunerados por separado.
+                        </small>
+
+                        <label for="dias_incapacidad">Días de incapacidad EPS:</label>
+                        <input type="number" id="dias_incapacidad" name="dias_incapacidad"
+                               value="0" min="0" max="15"
+                               aria-describedby="ayuda_incapacidad">
+                        <small id="ayuda_incapacidad">
+                            Los primeros 2 días de incapacidad los paga la empresa (100%).
+                            Del día 3 en adelante los paga la EPS (66.67% o 100% según caso).
+                            Se registran aquí para el cruce con la EPS.
+                        </small>
+
+                        <label for="dias_licencia_remunerada">Días licencia remunerada:</label>
+                        <input type="number" id="dias_licencia_remunerada" name="dias_licencia_remunerada"
+                               value="0" min="0" max="15">
+
+                        <label for="dias_suspension">Días suspensión disciplinaria:</label>
+                        <input type="number" id="dias_suspension" name="dias_suspension"
+                               value="0" min="0" max="15"
+                               aria-describedby="ayuda_suspension">
+                        <small id="ayuda_suspension">
+                            Durante suspensión NO se paga salario ni se generan prestaciones.
+                            Sí continúa la afiliación a seguridad social.
+                        </small>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 3: SALARIO Y CONFIGURACIÓN ─── -->
+                <article id="art_salario_config" aria-labelledby="titulo_salario_config">
+                    <h3 id="titulo_salario_config">3. Configuración Salarial</h3>
+
+                    <fieldset>
+                        <legend>Salario Base</legend>
+
+                        <label for="salario_base_input">Salario mensual pactado ($): <abbr title="obligatorio">*</abbr></label>
+                        <input type="number" id="salario_base_input" name="salario_base"
+                               placeholder="Ej: 1423500" required min="1423500"
+                               step="1"
+                               aria-describedby="ayuda_salario_base">
+                        <small id="ayuda_salario_base">
+                            No puede ser inferior al SMLMV 2026: $1.423.500.
+                            Para salario integral: mínimo $18.505.500 (13 SMLMV).
+                        </small>
+
+                        <!--
+                            AUTOMATIZACIÓN — REGLA IBC (Base de Cotización):
+                            IBC = Salario base + HE + recargos + comisiones + viáticos permanentes
+                            IBC NO incluye: auxilio de transporte, viáticos accidentales,
+                            bonificaciones no constitutivas de salario pactadas por escrito.
+                            IBC mínimo = 1 SMLMV. IBC máximo = 25 SMLMV.
+                        -->
+                        <label for="ibc_display">IBC (Ingreso Base de Cotización) $:</label>
+                        <input type="number" id="ibc_display" name="ibc" readonly
+                               placeholder="Se calcula automáticamente"
+                               aria-describedby="ayuda_ibc">
+                        <small id="ayuda_ibc">
+                            <strong>IMPORTANTE:</strong> El auxilio de transporte NO hace parte
+                            del IBC. El IBC es la base para calcular salud, pensión y ARL.
+                            Mínimo: 1 SMLMV · Máximo: 25 SMLMV.
+                        </small>
+
+                        <!--
+                            AUTOMATIZACIÓN — AUXILIO DE TRANSPORTE:
+                            Aplica SI: salario_base ≤ 2 SMLMV ($2.847.000 para 2026).
+                            Para quincena: $200.000 / 2 = $100.000.
+                            Para período incompleto: ($200.000 / 30) × días_trabajados.
+                            OJO: Si hay incapacidad, el aux. transporte se proporciona
+                            según días efectivamente laborados (no los incapacitados).
+                        -->
+                        <label for="aplica_aux_transporte">¿Aplica auxilio de transporte?</label>
+                        <select id="aplica_aux_transporte" name="aplica_aux_transporte">
+                            <option value="auto" selected>Automático (según salario)</option>
+                            <option value="si">Sí (forzar)</option>
+                            <option value="no">No (forzar)</option>
+                        </select>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Seguridad Social</legend>
+
+                        <label for="nivel_arl">Nivel de riesgo ARL (empresa paga): <abbr title="obligatorio">*</abbr></label>
+                        <select id="nivel_arl" name="nivel_arl" required>
+                            <option value="0.522">Nivel I — 0.522% · Riesgo mínimo (oficina, comercio)</option>
+                            <option value="1.044">Nivel II — 1.044% · Riesgo bajo (laboratorio, mantenimiento)</option>
+                            <option value="2.436" selected>Nivel III — 2.436% · Riesgo medio (procesos industriales)</option>
+                            <option value="4.350">Nivel IV — 4.350% · Riesgo alto (minería, construcción)</option>
+                            <option value="6.960">Nivel V — 6.960% · Riesgo máximo (explosivos, buceo)</option>
+                        </select>
+
+                        <label for="eps_empleado">EPS del empleado:</label>
+                        <select id="eps_empleado" name="eps_empleado">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="SURA">Sura EPS</option>
+                            <option value="SANITAS">Sanitas</option>
+                            <option value="COMPENSAR">Compensar</option>
+                            <option value="NUEVA_EPS">Nueva EPS</option>
+                            <option value="FAMISANAR">Famisanar</option>
+                            <option value="COOSALUD">Coosalud</option>
+                            <option value="SALUD_TOTAL">Salud Total</option>
+                        </select>
+
+                        <label for="fondo_pension">Fondo de pensiones:</label>
+                        <select id="fondo_pension" name="fondo_pension">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="COLPENSIONES">Colpensiones (RPM)</option>
+                            <option value="PORVENIR">Porvenir (RAIS)</option>
+                            <option value="PROTECCION">Protección (RAIS)</option>
+                            <option value="COLFONDOS">Colfondos (RAIS)</option>
+                            <option value="OLD_MUTUAL">Old Mutual (RAIS)</option>
+                            <option value="COLMENA">Colmena </option>
+                        </select>
+
+                        <label for="caja_comp_nombre">Caja de compensación:</label>
+                        <select id="caja_comp_nombre" name="caja_comp_nombre">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="CAFAM">Cafam</option>
+                            <option value="COMPENSAR">Compensar</option>
+                            <option value="COLSUBSIDIO">Colsubsidio</option>
+                            <option value="COMFENALCO">Comfenalco</option>
+                            <option value="COMFAMA">Comfama</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 4: TABLA DE LIQUIDACIÓN DETALLADA ─── -->
+                <article id="art_tabla_liquidacion" aria-labelledby="titulo_tabla">
+                    <h3 id="titulo_tabla">4. Liquidación Detallada</h3>
+                    <p>
+                        <small>
+                            Los valores en columna "Empleado paga" se descontarán del neto a pagar.
+                            Los valores en "Empresa paga" son costo adicional para la empresa.
+                            Los campos sombreados se calculan automáticamente por el sistema.
+                        </small>
+                    </p>
+
+                    <table>
+                        <caption>
+                            Desprendible de nómina — Liquidación según Ley Laboral Colombiana 2026
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Concepto</th>
+                                <th scope="col">Base de cálculo</th>
+                                <th scope="col">% / Tarifa</th>
+                                <th scope="col">Horas / Días / Unidades</th>
+                                <th scope="col">Empleado paga ($)</th>
+                                <th scope="col">Empresa paga ($)</th>
+                                <th scope="col">Valor calculado ($)</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            <!-- ════════ SECCIÓN A: DEVENGADO ════════ -->
+                            <tr>
+                                <th colspan="7" scope="rowgroup">
+                                    A. DEVENGADO — Lo que gana el empleado
+                                </th>
+                            </tr>
+
+                            <!--
+                                FÓRMULA: salario_base_calculado
+                                = (salario_base / 30) × dias_trabajados
+                                Nota: siempre base 30, independiente de mes.
+                            -->
+                            <tr>
+                                <td>Salario básico del período</td>
+                                <td>
+                                    <abbr title="(Salario mensual / 30) * días laborados">
+                                        Días laborados / 30
+                                    </abbr>
+                                </td>
+                                <td>100%</td>
+                                <td>
+                                    <output name="dias_trabajados_display" for="dias_trabajados">0</output>
+                                    días
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="salario_base_calculado" id="out_salario_base">
+                                        0
+                                    </output>
+                                    <input type="hidden" name="salario_base_calculado" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                FÓRMULA: auxilio_transporte
+                                Condición: salario_base ≤ 2 × SMLMV
+                                Mensual completo: $200.000
+                                Quincena completa: $100.000
+                                Período incompleto: ($200.000/30) × dias_trabajados
+                                NO proporcionar en días de incapacidad.
+                            -->
+                            <tr>
+                                <td>
+                                    Auxilio de transporte
+                                    <br><small>Solo si salario ≤ 2 SMLMV ($2.847.000)</small>
+                                </td>
+                                <td>Fijo legal 2026</td>
+                                <td>
+                                    $200.000/mes
+                                    <br><small>proporcional a días</small>
+                                </td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="auxilio_transporte" id="out_aux_transporte">0</output>
+                                    <input type="hidden" name="auxilio_transporte" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                HORAS EXTRAS — Marco legal CST Art. 159–162
+                                Hora ordinaria = salario_base / (30 × 8) = salario_base / 240
+
+                                HED (diurna 6am–9pm): hora_ord × 1.25
+                                HEN (nocturna 9pm–6am): hora_ord × 1.75
+                                HEDD (dominical/festivo diurna): hora_ord × 2.00
+                                HEDN (dominical/festivo nocturna): hora_ord × 2.50
+                                Recargo nocturno ordinario (no extra): hora_ord × 0.35
+
+                                LÍMITE LEGAL: máximo 2 horas extras/día, 12 horas/semana.
+                                El sistema debe ALERTAR si se supera este límite.
+                            -->
+                            <tr>
+                                <td>
+                                    H.E. Diurnas
+                                    <br><small>CST Art. 168 — 6:00am a 9:00pm</small>
+                                </td>
+                                <td>Hora ordinaria * 1.25</td>
+                                <td>+25%</td>
+                                <td>
+                                    <label for="cant_hed" class="sr-only">Cantidad horas extras diurnas</label>
+                                    <input type="number" id="cant_hed" name="cant_he_diurnas"
+                                           value="0" min="0" max="84"
+                                           aria-describedby="limite_he">
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="he_diurnas" id="out_he_diurnas">0</output>
+                                    <input type="hidden" name="he_diurnas" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    H.E. Nocturnas
+                                    <br><small>CST Art. 168 — 9:00pm a 6:00am</small>
+                                </td>
+                                <td>Hora ordinaria * 1.75</td>
+                                <td>+75%</td>
+                                <td>
+                                    <label for="cant_hen" class="sr-only">Cantidad horas extras nocturnas</label>
+                                    <input type="number" id="cant_hen" name="cant_he_nocturnas"
+                                           value="0" min="0" max="84">
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="he_nocturnas" id="out_he_nocturnas">0</output>
+                                    <input type="hidden" name="he_nocturnas" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    H.E. Dominical/Festivo Diurna
+                                    <br><small>CST Art. 171 — aplica recargo 100%</small>
+                                </td>
+                                <td>Hora ordinaria * 2.00</td>
+                                <td>+100%</td>
+                                <td>
+                                    <label for="cant_hedd" class="sr-only">Horas extras dominical diurna</label>
+                                    <input type="number" id="cant_hedd" name="cant_he_dom_diurnas"
+                                           value="0" min="0" max="84">
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="he_dom_diurnas" id="out_he_dom_diurnas">0</output>
+                                    <input type="hidden" name="he_dom_diurnas" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    H.E. Dominical/Festivo Nocturna
+                                    <br><small>CST Art. 168+171 — recargo máximo</small>
+                                </td>
+                                <td>Hora ordinaria * 2.50</td>
+                                <td>+150%</td>
+                                <td>
+                                    <label for="cant_hedn" class="sr-only">Horas extras dominical nocturna</label>
+                                    <input type="number" id="cant_hedn" name="cant_he_dom_nocturnas"
+                                           value="0" min="0" max="84">
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="he_dom_nocturnas" id="out_he_dom_nocturnas">0</output>
+                                    <input type="hidden" name="he_dom_nocturnas" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Recargo Nocturno Ordinario
+                                    <br><small>Horas ordinarias entre 6am y las 7pm (no extras)</small>
+                                </td>
+                                <td>Hora ordinaria * 0.35</td>
+                                <td>+35%</td>
+                                <td>
+                                    <label for="cant_rno" class="sr-only">Horas recargo nocturno ordinario</label>
+                                    <input type="number" id="cant_rno" name="cant_recargo_nocturno"
+                                           value="0" min="0">
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="recargo_nocturno" id="out_recargo_nocturno">0</output>
+                                    <input type="hidden" name="recargo_nocturno" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Recargo Dominical/Festivo Ordinario
+                                    <br><small>CST Art. 171 — día de descanso obligatorio laborado</small>
+                                </td>
+                                <td>Salario diario * 1.75</td>
+                                <td>+75%</td>
+                                <td>
+                                    <label for="cant_rdf" class="sr-only">Días dominicales/festivos laborados</label>
+                                    <input type="number" id="cant_rdf" name="cant_recargo_dom_fest"
+                                           value="0" min="0" max="10">
+                                    días
+                                </td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="recargo_dom_fest" id="out_recargo_dom_fest">0</output>
+                                    <input type="hidden" name="recargo_dom_fest" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                COMISIONES Y BONIFICACIONES:
+                                Constitutivas de salario: SÍ forman parte del IBC.
+                                No constitutivas (Art. 128 CST, acordadas por escrito): NO son IBC.
+                                El sistema debe preguntar la naturaleza jurídica.
+                            -->
+                            <tr>
+                                <td>
+                                    Comisiones / Bonificaciones
+                                    <br><small>Indicar si son constitutivas de salario</small>
+                                </td>
+                                <td>Valor directo</td>
+                                <td>
+                                    <select name="comision_naturaleza" aria-label="Naturaleza de la comisión">
+                                        <option value="constitutiva">Constitutiva de salario (sí IBC)</option>
+                                        <option value="no_constitutiva">No constitutiva (no IBC — Art.128)</option>
+                                    </select>
+                                </td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <input type="number" name="comisiones" value="0" min="0"
+                                           placeholder="Ingrese valor">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Viáticos permanentes
+                                    <br><small>Manutención y alojamiento habitual: SÍ son IBC</small>
+                                </td>
+                                <td>Valor directo</td>
+                                <td>Constitutivo de salario</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <input type="number" name="viaticos_permanentes" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Viáticos accidentales
+                                    <br><small>Transporte esporádico: NO son IBC (Art. 130 CST)</small>
+                                </td>
+                                <td>Valor directo</td>
+                                <td>No constitutivo</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <input type="number" name="viaticos_accidentales" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>Otros devengados</td>
+                                <td>Valor directo</td>
+                                <td>
+                                    <input type="text" name="otros_devengados_desc"
+                                           placeholder="Descripción del concepto">
+                                </td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <input type="number" name="otros_devengados" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <!-- FILA TOTALIZADORA DEVENGADO -->
+                            <tr>
+                                <th scope="row">TOTAL DEVENGADO</th>
+                                <td colspan="5"></td>
+                                <td>
+                                    <output name="total_devengado" id="out_total_devengado">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="total_devengado" value="0">
+                                </td>
+                            </tr>
+
+
+                            <!-- ════════ SECCIÓN B: DEDUCCIONES AL EMPLEADO ════════ -->
+                            <tr>
+                                <th colspan="7" scope="rowgroup">
+                                    B. DEDUCCIONES — Descuentos al empleado
+                                </th>
+                            </tr>
+
+                            <!--
+                                SEGURIDAD SOCIAL EMPLEADO:
+                                Salud: 4% del IBC
+                                Pensión: 4% del IBC
+                                    → Excepción: tipo_cotizante = 2 (pensionado) no aporta pensión.
+                                    → Si salario < 1 SMLMV (imposible legalmente pero por seguridad).
+                                Fondo solidaridad pensional:
+                                    1% adicional si IBC ≥ 4 SMLMV ($5.694.000)
+                                    0.2% adicional si IBC ≥ 16 SMLMV ($22.776.000)
+                                    0.4% adicional si IBC ≥ 17 SMLMV (escala progresiva hasta 1%)
+                            -->
+                            <tr>
+                                <td>
+                                    Aporte salud — empleado
+                                    <br><small>EPS: <output name="eps_nombre_display">—</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="salud_empleado" id="out_salud_empleado">0</output>
+                                    <input type="hidden" name="salud_empleado" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Aporte pensión — empleado
+                                    <br><small>Fondo: <output name="pension_nombre_display">—</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="pension_empleado" id="out_pension_empleado">0</output>
+                                    <input type="hidden" name="pension_empleado" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                FONDO DE SOLIDARIDAD PENSIONAL — Art. 27 Ley 100/93
+                                AUTOMATIZACIÓN:
+                                  Si IBC ≥ 4 SMLMV → cotizar 1% adicional a solidaridad
+                                  Si IBC entre 16–17 SMLMV → 0.2% adicional (total 1.2%)
+                                  Si IBC entre 17–18 SMLMV → 0.4% adicional (total 1.4%)
+                                  Si IBC entre 18–19 SMLMV → 0.6% adicional (total 1.6%)
+                                  Si IBC entre 19–20 SMLMV → 0.8% adicional (total 1.8%)
+                                  Si IBC ≥ 20 SMLMV → 1.0% adicional (total 2.0%)
+                                El subcuenta subsistencia aplica si IBC ≥ 4 SMLMV (0.2% más).
+                            -->
+                            <tr>
+                                <td>
+                                    Fondo solidaridad pensional
+                                    <br><small>Solo si IBC ≥ 4 SMLMV ($5.694.000) — Art. 27 L.100</small>
+                                </td>
+                                <td>IBC</td>
+                                <td>1% o 2% (escalonado)</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="solidaridad_pensional" id="out_solidaridad">0</output>
+                                    <input type="hidden" name="solidaridad_pensional" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                RETENCIÓN EN LA FUENTE — Art. 383 E.T.
+                                AUTOMATIZACIÓN — Método de cálculo (elegir uno):
+                                  a) Procedimiento 1: tabla mensual de retención sobre pagos laborales
+                                  b) Procedimiento 2: porcentaje fijo calculado en junio y diciembre
+                                Base gravable = Ingreso laboral − Deducción por dependientes (10%)
+                                               − Renta exenta (25%, máx $10.430.000/mes para 2026)
+                                               − Aportes obligatorios salud y pensión
+                                Si base ≤ 95 UVT: retención = 0
+                                ESTA ES LA DEDUCCIÓN MÁS COMPLEJA — requiere módulo independiente.
+                            -->
+                            <tr>
+                                <td>
+                                    Retención en la fuente
+                                    <br><small>Art. 383 E.T. — sobre ingresos laborales</small>
+                                </td>
+                                <td>Base gravable</td>
+                                <td>
+                                    <select name="rte_procedimiento"
+                                            aria-label="Procedimiento de retención en la fuente">
+                                        <option value="1" selected>Procedimiento 1 (tabla mensual)</option>
+                                        <option value="2">Procedimiento 2 (% fijo semestral)</option>
+                                        <option value="manual">Manual (ingreso directo)</option>
+                                    </select>
+                                </td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="retencion_fuente" id="out_rte_fuente">0</output>
+                                    <input type="hidden" name="retencion_fuente" value="0">
+                                </td>
+                            </tr>
+
+                            <!-- DEDUCCIONES OPERATIVAS / NOVEDADES -->
+                            <tr>
+                                <td>
+                                    Descuento días no trabajados
+                                    <br><small>Ausencias injustificadas — Art. 57 CST</small>
+                                </td>
+                                <td>Salario diario</td>
+                                <td>Descuento por día</td>
+                                <td>
+                                    <label for="dias_ausencia" class="sr-only">Días de ausencia injustificada</label>
+                                    <input type="number" id="dias_ausencia" name="dias_ausencia"
+                                           value="0" min="0" max="15">
+                                    días
+                                </td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="desc_ausencias" id="out_desc_ausencias">0</output>
+                                    <input type="hidden" name="desc_ausencias" value="0">
+                                </td>
+                            </tr>
+
+                            <!--
+                                SANCIÓN DOMINICAL — Art. 173 CST:
+                                Si el empleado faltó injustificadamente el viernes o sábado
+                                anterior o el lunes posterior a un domingo, PIERDE el pago
+                                del descanso dominical remunerado.
+                                AUTOMATIZACIÓN: verificar inasistencias adyacentes al domingo.
+                            -->
+                            <tr>
+                                <td>
+                                    Sanción descanso dominical
+                                    <br><small>Art. 173 CST — falta viernes/sábado anterior o lunes posterior</small>
+                                </td>
+                                <td>Salario diario</td>
+                                <td>Pérdida dominical</td>
+                                <td>
+                                    <label for="dom_sancionados" class="sr-only">Domingos sancionados</label>
+                                    <input type="number" id="dom_sancionados" name="dom_sancionados"
+                                           value="0" min="0" max="3">
+                                    domingos
+                                </td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="sancion_dominical" id="out_sancion_dom">0</output>
+                                    <input type="hidden" name="sancion_dominical" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>Faltantes de caja / pérdidas</td>
+                                <td>Valor documentado</td>
+                                <td>Cobro operativo</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <input type="number" name="faltantes_caja" value="0" min="0"
+                                           placeholder="Ingrese valor">
+                                </td>
+                            </tr>
+
+                            <!--
+                                PRÉSTAMOS Y LIBRANZAS:
+                                LÍMITE LEGAL: No se pueden descontar más del 50% del salario
+                                (Art. 149 CST). El sistema debe validar este límite.
+                                Libranza Ley 1527/2012: máx. 50% del neto, autorización escrita.
+                            -->
+                            <tr>
+                                <td>
+                                    Préstamo empresa
+                                    <br><small>Máx. 50% del salario — Art. 149 CST</small>
+                                </td>
+                                <td>Cuota acordada</td>
+                                <td>Según acuerdo</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <input type="number" name="prestamo_empresa" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Libranza (entidad financiera)
+                                    <br><small>Ley 1527/2012 — autorización escrita requerida</small>
+                                </td>
+                                <td>Cuota libranza</td>
+                                <td>Según crédito</td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <input type="number" name="libranza" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>Otras deducciones</td>
+                                <td>Valor directo</td>
+                                <td>
+                                    <input type="text" name="otras_deducciones_desc"
+                                           placeholder="Descripción (ej: cuota sindicato)">
+                                </td>
+                                <td>—</td>
+                                <td>Empleado</td>
+                                <td>—</td>
+                                <td>
+                                    <input type="number" name="otras_deducciones" value="0" min="0">
+                                </td>
+                            </tr>
+
+                            <!-- TOTALIZADORA DEDUCCIONES -->
+                            <tr>
+                                <th scope="row">TOTAL DEDUCCIONES</th>
+                                <td colspan="5"></td>
+                                <td>
+                                    <output name="total_deducciones" id="out_total_deducciones">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="total_deducciones" value="0">
+                                </td>
+                            </tr>
+
+                            <!-- NETO A PAGAR — FILA PRINCIPAL -->
+                            <tr>
+                                <th scope="row">
+                                    NETO A PAGAR AL EMPLEADO
+                                    <br><small>Total devengado y Total deducciones</small>
+                                </th>
+                                <td colspan="5"></td>
+                                <td>
+                                    <output name="neto_pagar" id="out_neto_pagar">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="neto_pagar" value="0">
+                                </td>
+                            </tr>
+
+
+                            <!-- ════════ SECCIÓN C: APORTES PARAFISCALES (EMPRESA) ════════ -->
+                            <tr>
+                                <th colspan="7" scope="rowgroup">
+                                    C. APORTES PARAFISCALES — Costo empresa (no descuentan al empleado)
+                                </th>
+                            </tr>
+
+                            <!--
+                                EXENCIONES PARAFISCALES — Ley 1607/2012 (Art. 65):
+                                Empresas con empleados que ganen menos de 10 SMLMV
+                                están EXENTAS de SENA, ICBF y caja de compensación
+                                solo si el empleado fue contratado con esas condiciones.
+                                Para 2026: umbral = $14.235.000
+                                AUTOMATIZACIÓN: validar esta condición por empleado.
+
+                                OJO empresa pequeña (< 3 empleados, Ley 590/2000):
+                                primeros 2 años también tienen exenciones.
+                            -->
+                            <tr>
+                                <td>
+                                    Salud — aporte empresa
+                                    <br><small>EPS: <output name="eps_empresa_display">—</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>8.5%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="salud_empresa" id="out_salud_empresa">0</output>
+                                    <input type="hidden" name="salud_empresa" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Pensión — aporte empresa
+                                    <br><small>Fondo: <output name="pension_empresa_display">—</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>12%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="pension_empresa" id="out_pension_empresa">0</output>
+                                    <input type="hidden" name="pension_empresa" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    ARL — riesgo laboral
+                                    <br><small>Nivel: <output name="nivel_arl_display">III</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>
+                                    <output name="tasa_arl_display">2.436%</output>
+                                </td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="arl" id="out_arl">0</output>
+                                    <input type="hidden" name="arl" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    SENA
+                                    <br><small>Exento si nómina ≤ 10 SMLMV — Ley 1607/2012</small>
+                                </td>
+                                <td>IBC</td>
+                                <td>2%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="sena" id="out_sena">0</output>
+                                    <input type="hidden" name="sena" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    ICBF
+                                    <br><small>Exento si nómina ≤ 10 SMLMV — Ley 1607/2012</small>
+                                </td>
+                                <td>IBC</td>
+                                <td>3%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="icbf" id="out_icbf">0</output>
+                                    <input type="hidden" name="icbf" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Caja de compensación familiar
+                                    <br><small>Caja: <output name="caja_comp_display">—</output></small>
+                                </td>
+                                <td>IBC</td>
+                                <td>4%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="caja_compensacion" id="out_caja_comp">0</output>
+                                    <input type="hidden" name="caja_compensacion" value="0">
+                                </td>
+                            </tr>
+
+
+                            <!-- ════════ SECCIÓN D: PROVISIONES PRESTACIONES SOCIALES ════════ -->
+                            <tr>
+                                <th colspan="7" scope="rowgroup">
+                                    D. PROVISIONES PRESTACIONES SOCIALES — Costo empresa (causación mensual)
+                                </th>
+                            </tr>
+
+                            <!--
+                                PRESTACIONES SOCIALES — FÓRMULAS LEGALES:
+
+                                Prima de servicios (Ley 1a/1963):
+                                  = (Devengado × días trabajados en semestre) / 180
+                                  Se paga: 30 jun y 20 dic.
+                                  Provisión mensual ≈ devengado × 8.33%
+
+                                Cesantías (Art. 249 CST):
+                                  = (Devengado × días trabajados en el año) / 360
+                                  Se consignan al fondo antes del 15 febrero de cada año.
+                                  Provisión mensual ≈ devengado × 8.33%
+
+                                Intereses cesantías (Art. 1 Decreto 116/76):
+                                  = Cesantías × 12% anual
+                                  = Provisión mensual ≈ cesantías_acumuladas × 1%
+                                  Se pagan directamente al trabajador en enero.
+
+                                Vacaciones (Art. 186 CST):
+                                  = Salario base × días trabajados / 720
+                                  (15 días hábiles por año = 1.25 días/mes)
+                                  Provisión mensual ≈ salario_base × 4.167%
+                                  NOTA: vacaciones solo se calculan sobre salario base,
+                                  NO sobre horas extras ni recargos.
+                            -->
+                            <tr>
+                                <td>
+                                    Prima de servicios
+                                    <br><small>Ley 1a/1963 — provisión del período</small>
+                                </td>
+                                <td>Devengado total</td>
+                                <td>8.33% mensual</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="prima" id="out_prima">0</output>
+                                    <input type="hidden" name="prima" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Cesantías
+                                    <br><small>Art. 249 CST — provisión del período</small>
+                                </td>
+                                <td>Devengado total</td>
+                                <td>8.33% mensual</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="cesantias" id="out_cesantias">0</output>
+                                    <input type="hidden" name="cesantias" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Intereses sobre cesantías
+                                    <br><small>Art. 1 Dto. 116/76 — se pagan a enero</small>
+                                </td>
+                                <td>Cesantías acumuladas</td>
+                                <td>12% anual / 1% mensual</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="intereses_cesantias" id="out_int_ces">0</output>
+                                    <input type="hidden" name="intereses_cesantias" value="0">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    Vacaciones
+                                    <br><small>Art. 186 CST — solo sobre salario base</small>
+                                </td>
+                                <td>Salario base (sin HE)</td>
+                                <td>4.167% mensual</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Empresa</td>
+                                <td>
+                                    <output name="vacaciones" id="out_vacaciones">0</output>
+                                    <input type="hidden" name="vacaciones" value="0">
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                        <tfoot>
+                            <tr>
+                                <th colspan="6" scope="row">
+                                    COSTO TOTAL EMPRESA
+                                    <br><small>
+                                        Neto pagado + Seg. social empresa + Parafiscales + Provisiones
+                                    </small>
+                                </th>
+                                <td>
+                                    <output name="costo_total_empresa" id="out_costo_total">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="costo_total_empresa" value="0">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th colspan="6" scope="row">
+                                    IBC (Base de cotización seguridad social)
+                                    <br><small>Salario + HE + recargos + viáticos perm. Sin aux. transporte</small>
+                                </th>
+                                <td>
+                                    <output name="ibc_total" id="out_ibc_total">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="ibc_total" value="0">
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <small id="limite_he">
+                        Límite legal horas extras: 2 horas/día · 12 horas/semana (Art. 162 CST).
+                        El sistema alertará si se supera este límite.
+                    </small>
+
+                </article>
+
+                <!-- ─── ARTÍCULO 5: OBSERVACIONES ─── -->
+                <article id="art_observaciones">
+                    <h3>5. Observaciones de la Liquidación</h3>
+                    <fieldset>
+                        <legend>Novedades y notas</legend>
+
+                        <label for="observaciones">Observaciones generales:</label>
+                        <textarea id="observaciones" name="observaciones"
+                                  rows="3" maxlength="500"
+                                  placeholder="Ej: incapacidad radicada, acuerdo de pago, novedad de nómina...">
+                        </textarea>
+
+                        <label for="elaborado_por">Elaborado por:</label>
+                        <input type="text" id="elaborado_por" name="elaborado_por"
+                               placeholder="Nombre del responsable de nómina">
+
+                        <label for="aprobado_por">Revisado / Aprobado por:</label>
+                        <input type="text" id="aprobado_por" name="aprobado_por"
+                               placeholder="Nombre del aprobador">
+                    </fieldset>
+                </article>
+
+                <!-- ACCIONES DEL FORMULARIO -->
+                <fieldset id="acciones_formulario">
+                    <legend>Acciones</legend>
+
+                    <!--
+                        AUTOMATIZACIONES PREVISTAS:
+                        btn_guardar → POST a procesar_nomina.php
+                          · Validar todos los cálculos en servidor antes de guardar
+                          · Generar número consecutivo de comprobante
+                          · Actualizar acumulados del empleado (horas, cesantías, etc.)
+
+                        btn_calcular → AJAX a calcular_nomina.php (solo lectura)
+                          · Retorna JSON con todos los valores calculados
+                          · Poblar los <output> sin guardar
+
+                        btn_imprimir → Generar PDF o ventana de impresión
+                          · Solo mostrar el desprendible del empleado (vista limpia)
+                          · Sin filas de parafiscales ni costos empresa
+
+                        btn_correo → AJAX a enviar_desprendible.php
+                          · Enviar PDF al correo registrado del empleado
+                          · Registrar envío en log de notificaciones
+
+                        btn_descargar → Descargar resumen Excel/PDF del mes
+                          · Consolidado de toda la nómina del período
+                    -->
+
+                    <button type="submit" id="btn_guardar_nomina"
+                            name="accion" value="guardar">
+                        Calcular y guardar nómina
+                    </button>
+
+                    <button type="button" id="btn_calcular_preview"
+                            aria-describedby="ayuda_calcular">
+                        Vista previa de cálculos
+                    </button>
+                    <small id="ayuda_calcular">Calcula sin guardar en base de datos.</small>
+
+                    <button type="button" id="btn_imprimir_desprendible">
+                        Imprimir desprendible del empleado
+                    </button>
+
+                    <button type="button" id="btn_enviar_correo">
+                        Enviar desprendible por correo
+                    </button>
+
+                    <button type="button" id="btn_descargar_mes">
+                        Descargar resumen del período
+                    </button>
+
+                    <button type="reset" id="btn_limpiar">
+                        Limpiar formulario
+                    </button>
+                </fieldset>
+
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN DE REFERENCIA: REGLAS DE AUTOMATIZACIÓN
+             Este bloque es documentación técnica para el desarrollador.
+             En producción puede ocultarse o moverlo a un archivo separado.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_reglas_automatizacion" aria-labelledby="titulo_reglas">
+            <h2 id="titulo_reglas">Reglas de Automatización del Sistema</h2>
+            <p>
+                <small>
+                    Este bloque documenta las reglas de negocio y fórmulas que el backend
+                    y/o el frontend deben implementar. Sirve de contrato entre contabilidad
+                    y desarrollo.
+                </small>
+            </p>
+
+            <article id="art_formulas">
+                <h3>Fórmulas de cálculo</h3>
+
+                <table>
+                    <caption>Fórmulas legales por concepto — Nómina Colombia 2026</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Concepto</th>
+                            <th scope="col">Fórmula</th>
+                            <th scope="col">Base legal</th>
+                            <th scope="col">Observación crítica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Salario diario</td>
+                            <td><code>salario_base / 30</code></td>
+                            <td>Art. 134 CST</td>
+                            <td>Siempre base 30, nunca días calendario del mes.</td>
+                        </tr>
+                        <tr>
+                            <td>Hora ordinaria</td>
+                            <td><code>salario_base / 240</code></td>
+                            <td>Art. 161 CST</td>
+                            <td>30 días * 8 horas = 240 h/mes.</td>
+                        </tr>
+                        <tr>
+                            <td>Auxilio de transporte</td>
+                            <td><code>200000 * (dias_trabajados / 30)</code></td>
+                            <td>Decreto 2470/2024</td>
+                            <td>Solo si salario ≤ 2 SMLMV. NO incluir en IBC.</td>
+                        </tr>
+                        <tr>
+                            <td>IBC</td>
+                            <td><code>salario_base + HE + recargos + viaticos_perm + comisiones_const</code></td>
+                            <td>Art. 18 Ley 100/93</td>
+                            <td>Mín. 1 SMLMV, máx. 25 SMLMV. Sin aux. transporte.</td>
+                        </tr>
+                        <tr>
+                            <td>H.E. Diurna</td>
+                            <td><code>hora_ord * 1.25 * cantidad</code></td>
+                            <td>Art. 168 CST</td>
+                            <td>6:00am - 7:00pm días hábiles.</td>
+                        </tr>
+                        <tr>
+                            <td>H.E. Nocturna</td>
+                            <td><code>hora_ord * 1.75 * cantidad</code></td>
+                            <td>Art. 168 CST</td>
+                            <td>7:00pm - 6:00am cualquier día.</td>
+                        </tr>
+                        <tr>
+                            <td>H.E. Dom/Fest. Diurna</td>
+                            <td><code>hora_ord * 2.00 * cantidad</code></td>
+                            <td>Art. 168 - 171 CST</td>
+                            <td>Horas extras en domingo o festivo, jornada diurna.</td>
+                        </tr>
+                        <tr>
+                            <td>H.E. Dom/Fest. Nocturna</td>
+                            <td><code>hora_ord * 2.50 * cantidad</code></td>
+                            <td>Art. 168 - 171 CST</td>
+                            <td>Horas extras en domingo o festivo, jornada nocturna.</td>
+                        </tr>
+                        <tr>
+                            <td>Recargo nocturno ord.</td>
+                            <td><code>hora_ord * 0.35 * cantidad</code></td>
+                            <td>Art. 168 CST</td>
+                            <td>Horas ordinarias (no extras) trabajadas de noche.</td>
+                        </tr>
+                        <tr>
+                            <td>Salud empleado</td>
+                            <td><code>IBC * 0.04</code></td>
+                            <td>Art. 204 Ley 100/93</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Pensión empleado</td>
+                            <td><code>IBC * 0.04</code></td>
+                            <td>Art. 20 Ley 100/93</td>
+                            <td>No aplica si cotizante tipo 2 (pensionado).</td>
+                        </tr>
+                        <tr>
+                            <td>Salud empresa</td>
+                            <td><code>IBC * 0.085</code></td>
+                            <td>Art. 204 Ley 100/93</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Pensión empresa</td>
+                            <td><code>IBC * 0.12</code></td>
+                            <td>Art. 20 Ley 100/93</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Cesantías (provisión)</td>
+                            <td><code>devengado * 0.0833</code></td>
+                            <td>Art. 249 CST</td>
+                            <td>Incluye aux. transporte en la base de cesantías.</td>
+                        </tr>
+                        <tr>
+                            <td>Prima (provisión)</td>
+                            <td><code>devengado * 0.0833</code></td>
+                            <td>Ley 1a/1963</td>
+                            <td>Incluye aux. transporte en la base de prima.</td>
+                        </tr>
+                        <tr>
+                            <td>Int. cesantías (provisión)</td>
+                            <td><code>cesantias_acumuladas * 0.12 / 12</code></td>
+                            <td>Dto. 116/76</td>
+                            <td>Pago directo al empleado en enero.</td>
+                        </tr>
+                        <tr>
+                            <td>Vacaciones (provisión)</td>
+                            <td><code>salario_base * 0.04167</code></td>
+                            <td>Art. 186 CST</td>
+                            <td>Base: solo salario ordinario, SIN horas extras.</td>
+                        </tr>
+                        <tr>
+                            <td>Costo total empresa</td>
+                            <td><code>neto_pagar + salud_emp + pension_emp + arl + sena + icbf + caja + prima + ces + int_ces + vac</code></td>
+                            <td>—</td>
+                            <td>Representa el verdadero costo laboral por empleado.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article id="art_validaciones">
+                <h3>Validaciones obligatorias del sistema</h3>
+                <ol>
+                    <li>
+                        <strong>Salario mínimo:</strong> Rechazar si
+                        <code>salario_base &lt; SMLMV_VIGENTE</code>.
+                    </li>
+                    <li>
+                        <strong>Límite horas extras:</strong> Alertar si
+                        <code>(HED + HEN + HEDD + HEDN) &gt; 12 por semana</code>
+                        o <code>&gt; 2 por día</code> (Art. 162 CST).
+                    </li>
+                    <li>
+                        <strong>Límite descuentos:</strong> Rechazar si
+                        <code>(prestamos + libranzas + otras_deducciones) &gt; salario_base * 0.50</code>
+                        (Art. 149 CST).
+                    </li>
+                    <li>
+                        <strong>IBC máximo:</strong> Limitar IBC a
+                        <code>25 * SMLMV</code> ($35.587.500 para 2026).
+                    </li>
+                    <li>
+                        <strong>IBC mínimo:</strong> Si IBC calculado &lt; 1 SMLMV, usar 1 SMLMV como base mínima.
+                    </li>
+                    <li>
+                        <strong>Neto nunca negativo:</strong> Validar que
+                        <code>neto_pagar &gt;= 0</code> antes de guardar.
+                    </li>
+                    <li>
+                        <strong>Período duplicado:</strong> Verificar que no exista ya una nómina
+                        guardada para el mismo empleado + período + frecuencia de corte.
+                    </li>
+                    <li>
+                        <strong>Salario integral:</strong> Si
+                        <code>tipo_salario = "integral"</code>, bloquear campos de
+                        auxilio transporte, SENA, ICBF y caja de compensación.
+                        IBC = salario_integral  0.70.
+                    </li>
+                </ol>
+            </article>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>
+            <small>
+                MY_BUSINESS S.A.S. | Sistema de Nómina v1.0 |
+                Normativa: CST, Ley 100/93, Ley 50/90, Dto. 1072/2015 |
+                Valores SMLMV 2026 según Dto. <data value="2024">2024</data> |
+                Módulo desarrollado para uso interno.
+            </small>
+        </p>
+        <p>
+            <small>
+                <strong>Aviso legal:</strong> Este documento es un comprobante interno de nómina.
+                La empresa debe conservar los soportes de pago por mínimo 5 años
+                (Art. 134 Dto. 2649/93).
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>

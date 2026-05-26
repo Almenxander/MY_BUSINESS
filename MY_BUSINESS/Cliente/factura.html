@@ -10,66 +10,210 @@
 <body>
 
     <main>
-        <section>
-            <header>
-                <h1>MY_BUSINESS S.A.S</h1>
-                <p>NIT: 1.073.170.283</p>
-                <p>KM 13 +325 Sabana Pijao</p>
-                <p>responsable de IVA</p>
+        <article id="comprobante_venta">
+
+            <header id="encabezado_empresa">
+                <h1>MY_BUSINESS S.A.S.</h1>
+                <address>
+                    <p>NIT: <strong id="comprobante_nit">1.073.170.283-1</strong></p>
+                    <p>Dirección: <span id="comprobante_direccion">KM 13 +325 Sabana Pijao</span></p>
+                    <p>Municipio: <span id="comprobante_municipio">Facatativá, Cundinamarca</span></p>
+                    <p>Teléfono: <a href="tel:+573001234567" id="comprobante_telefono">+57 300 123 4567</a></p>
+                </address>
+                <p>Régimen: <strong>Responsable de IVA</strong></p>
+                <p><small>Resolución de Facturación DIAN N°: <span id="comprobante_resolucion">—</span></small></p>
             </header>
 
             <hr>
 
-            <article>
-                <h2>Comprobante de venta N° 00001</h2>
-                <p>Fecha: 24 abril, 2026</p>
-                <p>hora:8: 50 pm</p>
-                <p>cajero: Alexander Sanabria</p>
-            </article>
+            <section id="datos_comprobante">
+                <h2>Comprobante de Venta N° <span id="comprobante_numero">00001</span></h2>
+
+                <table border="1">
+                    <caption>Información de la Transacción</caption>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Fecha:</th>
+                            <td>
+                                <time id="comprobante_fecha" datetime="2026-04-24">
+                                    24 de abril de 2026
+                                </time>
+                            </td>
+                            <th scope="row">Hora:</th>
+                            <td>
+                                <time id="comprobante_hora" datetime="20:50">
+                                    8:50 PM
+                                </time>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Cajero:</th>
+                            <td id="comprobante_cajero" class="usuario_nombre">—</td>
+                            <th scope="row">Estado:</th>
+                            <td><mark id="comprobante_estado">Pagado</mark></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Medio de Pago:</th>
+                            <td id="comprobante_medio_pago">—</td>
+                            <th scope="row">N° Autorización:</th>
+                            <td id="comprobante_autorizacion">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
 
             <hr>
 
-            <table>
-                <caption>Detalles de Compra</caption>
-                <thead>
-                    <tr>
-                        <th>Descripción</th>
-                        <th>Cantidad</th>
-                        <th>Valor Unidad</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Camisa Tipo Polo Talla s.</td>
-                        <td>2</td>
-                        <td>$50.000</td>
-                        <td>$100.000</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="3">Subtotal (Base Grabable)</th>
-                        <td>$84.034</td>
-                    </tr>
-                    <tr>
-                        <th colspan="3">IVA (19%)</th>
-                        <td>$15.966</td>
-                    </tr>
-                    <tr>
-                        <th colspan="3">TOTAL FINAL</th>
-                        <td><strong>$100.000</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <section id="datos_cliente">
+                <h3>Datos del Cliente</h3>
+                <table border="1">
+                    <caption>Información del Comprador</caption>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Nombre / Razón Social:</th>
+                            <td id="cliente_nombre">Consumidor Final</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Documento:</th>
+                            <td id="cliente_documento">—</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Dirección:</th>
+                            <td id="cliente_direccion">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
             <hr>
-            <footer>
-                <p>Gracias por su Compra en MY_BUSINESS</p>
-                <p>Este Documento es un Soporte Contable Interno.</p>
-                <button type="button">Imprimir Comprovante </button>
+
+            <section id="detalle_productos">
+                <h3>Detalle de Productos</h3>
+                <table border="1">
+                    <caption>Productos adquiridos e impuestos aplicados según normativa DIAN 2026</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Código</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Cant.</th>
+                            <th scope="col">Valor Unitario</th>
+                            <th scope="col">Descuento</th>
+                            <th scope="col">Base Gravable</th>
+                            <th scope="col">IVA %</th>
+                            <th scope="col">Valor IVA</th>
+                            <th scope="col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalle_items_comprobante">
+                        <tr>
+                            <td>PROD-001</td>
+                            <td>Camisa Tipo Polo Talla S</td>
+                            <td>2</td>
+                            <td>$50.000</td>
+                            <td>$0</td>
+                            <td>$84.034</td>
+                            <td>19%</td>
+                            <td>$15.966</td>
+                            <td>$100.000</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row" colspan="5">Subtotal Base Gravable:</th>
+                            <td id="comprobante_base_gravable" colspan="4">$84.034</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" colspan="5">Total Descuentos:</th>
+                            <td id="comprobante_descuentos" colspan="4">$0</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" colspan="5">Total IVA Cobrado (19%):</th>
+                            <td id="comprobante_iva" colspan="4">$15.966</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" colspan="5">
+                                <strong>TOTAL A PAGAR:</strong>
+                            </th>
+                            <td colspan="4">
+                                <output id="comprobante_total">
+                                    <strong>$100.000 COP</strong>
+                                </output>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </section>
+
+            <hr>
+
+            <section id="informacion_pago">
+                <h3>Información del Pago</h3>
+                <table border="1">
+                    <caption>Detalle del Pago Realizado</caption>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Valor Total:</th>
+                            <td id="pago_total">$100.000 COP</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Dinero Recibido:</th>
+                            <td id="pago_recibido">$100.000 COP</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Cambio Entregado:</th>
+                            <td id="pago_cambio">$0 COP</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <hr>
+
+            <footer id="pie_comprobante">
+                <p>Gracias por su compra en <strong>MY_BUSINESS</strong></p>
+                <p>¡Vuelva pronto!</p>
+                <p>
+                    <small>
+                        Este documento es un soporte contable de control interno válido
+                        según la normativa tributaria colombiana vigente.
+                    </small>
+                </p>
+                <p>
+                    <small>
+                        MY_BUSINESS cumple con la Ley 1581 de 2012 (Habeas Data)
+                        para la protección de sus datos personales.
+                    </small>
+                </p>
+
+                <br>
+
+                <nav id="acciones_comprobante">
+                    <ul>
+                        <li>
+                            <button type="button" id="btn_imprimir_comprobante">
+                                Imprimir Comprobante
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" id="btn_enviar_correo_comprobante">
+                                Enviar por Correo al Cliente
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" id="btn_nueva_venta">
+                                Nueva Venta
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
             </footer>
-        </section>
+
+        </article>
     </main>
+
+    <script src="auth.js" defer></script>
+    <script src="factura.js" defer></script>
+
 </body>
 
-</html>
+</html> 
