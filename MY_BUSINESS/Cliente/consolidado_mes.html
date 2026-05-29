@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidado Mensual de Nómina — MY_BUSINESS</title>
+</head>
+<body>
+
+    <header>
+        <hgroup>
+            <h1>MY_BUSINESS S.A.S.</h1>
+            <p>NIT: 000.000.000-0 | Consolidado Mensual de Nómina</p>
+        </hgroup>
+        <nav aria-label="Secciones del consolidado">
+            <ol>
+                <li><a href="#sec_encabezado">Período y estado</a></li>
+                <li><a href="#sec_resumen_gerencial">Resumen gerencial</a></li>
+                <li><a href="#sec_detalle_empleados">Detalle por empleado</a></li>
+                <li><a href="#sec_resumen_area">Resumen por área</a></li>
+                <li><a href="#sec_obligaciones">Obligaciones a pagar</a></li>
+                <li><a href="#sec_aprobacion">Aprobación y cierre</a></li>
+                <li><a href="#sec_bd">Estructura de base de datos</a></li>
+            </ol>
+        </nav>
+    </header>
+
+    <hr>
+
+    <main>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 1 — ENCABEZADO Y ESTADO DEL PERÍODO
+             
+             IMPACTO EN TU EMPRESA:
+             Un período de nómina tiene un ciclo de vida:
+             Abierto → En revisión → Aprobado → Cerrado → Pagado.
+             Esta sección muestra en qué estado está la nómina actual
+             y quién ha hecho qué. Es la trazabilidad que exige la UGPP
+             cuando audita tu empresa.
+             
+             AUTOMATIZACIÓN:
+             — Al entrar al consolidado, el sistema carga automáticamente
+               el período activo con todos los desprendibles ya calculados.
+             — Si hay novedades pendientes sin aprobar → muestra alerta
+               y bloquea el botón de aprobación.
+             — El botón "Generar PILA" solo aparece cuando el período
+               está en estado "Aprobado".
+             — El botón "Cerrar período" es IRREVERSIBLE: archiva todas
+               las liquidaciones y abre automáticamente el siguiente período.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_encabezado" aria-labelledby="tit_encabezado">
+            <h2 id="tit_encabezado">Período de nómina</h2>
+
+            <!-- SELECTOR DE PERÍODO -->
+            <form id="form_selector_periodo" method="get" action="consolidado.php">
+                <fieldset>
+                    <legend>Seleccionar período</legend>
+
+                    <!--
+                        AUTOMATIZACIÓN:
+                        Solo muestra períodos que el usuario tiene
+                        permiso de ver según su rol:
+                          - Auxiliar nómina: solo período actual
+                          - Contador: todos los períodos del año
+                          - Gerente: todos los períodos históricos
+                    -->
+                    <label for="sel_periodo">Período:</label>
+                    <select id="sel_periodo" name="id_periodo">
+                        <optgroup label="2026 — Abiertos">
+                            <option value="2026-05-Q1" selected>
+                                Mayo 2026 — 1ra quincena (1–15)
+                            </option>
+                            <option value="2026-05-Q2">
+                                Mayo 2026 — 2da quincena (16–31)
+                            </option>
+                        </optgroup>
+                        <optgroup label="2026 — Cerrados">
+                            <option value="2026-04-Q2">
+                                Abril 2026 — 2da quincena
+                            </option>
+                            <option value="2026-04-Q1">
+                                Abril 2026 — 1ra quincena
+                            </option>
+                        </optgroup>
+                    </select>
+
+                    <label for="sel_tipo_nomina">Tipo de nómina:</label>
+                    <select id="sel_tipo_nomina" name="tipo_nomina">
+                        <option value="todos" selected>Todas</option>
+                        <option value="regular">Regular</option>
+                        <option value="prima">Prima de servicios</option>
+                        <option value="vacaciones">Pago de vacaciones</option>
+                        <option value="liquidacion">Liquidaciones definitivas</option>
+                    </select>
+
+                    <button type="submit">Cargar consolidado</button>
+                </fieldset>
+            </form>
+
+            <!-- ESTADO DEL PERÍODO -->
+            <table aria-label="Estado actual del período de nómina">
+                <caption>Estado del período seleccionado</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Período</th>
+                        <th scope="col">Fecha apertura</th>
+                        <th scope="col">Novedades</th>
+                        <th scope="col">Empleados</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Aprobado por</th>
+                        <th scope="col">Fecha cierre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Mayo 2026 — 1ra quincena</td>
+                        <td><time datetime="2026-05-01">01/05/2026</time></td>
+                        <td>
+                            <output name="novedades_pendientes">
+                                3 pendientes · 5 aprobadas
+                            </output>
+                        </td>
+                        <td>
+                            <output name="empleados_periodo">12 activos</output>
+                        </td>
+                        <td>
+                            <output name="estado_periodo">En revisión</output>
+                        </td>
+                        <td>
+                            <output name="aprobador_periodo">—</output>
+                        </td>
+                        <td>
+                            <output name="fecha_cierre_periodo">Pendiente</output>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- ALERTAS DEL PERÍODO -->
+            <!--
+                AUTOMATIZACIÓN — ALERTAS CRÍTICAS:
+                El sistema debe mostrar cada una de estas alertas
+                si la condición es verdadera. Bloquean el cierre.
+                
+                ALERTA 1: Novedades sin aprobar
+                ALERTA 2: Empleados sin liquidación generada
+                ALERTA 3: Variación > 20% respecto al período anterior
+                          (posible error de digitación)
+                ALERTA 4: Algún neto a pagar resulta negativo
+                ALERTA 5: Empleado nuevo sin afiliaciones completas
+                ALERTA 6: Contrato vencido en el período
+                ALERTA 7: Empleado en mora de vacaciones (>2 años sin tomar)
+            -->
+            <section aria-labelledby="tit_alertas" aria-live="polite">
+                <h3 id="tit_alertas">Alertas del período</h3>
+                <table>
+                    <caption>Situaciones que requieren atención antes de cerrar</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Prioridad</th>
+                            <th scope="col">Alerta</th>
+                            <th scope="col">Detalle</th>
+                            <th scope="col">Acción requerida</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Alta</td>
+                            <td>Novedades sin aprobar</td>
+                            <td>
+                                <output name="alerta_novedades">
+                                    3 novedades pendientes de aprobación
+                                </output>
+                            </td>
+                            <td>
+                                <a href="novedades.php?estado=pendiente">
+                                    Ir a aprobar novedades
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Media</td>
+                            <td>Variación inusual en nómina</td>
+                            <td>
+                                <output name="alerta_variacion">
+                                    Sin variaciones inusuales
+                                </output>
+                            </td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 2 — RESUMEN GERENCIAL
+             
+             IMPACTO EN TU EMPRESA:
+             Esta es la primera página que debe ver el gerente.
+             Cinco números clave que resumen toda la nómina del período.
+             Para la empresa de 2.500 empleados, estos totales alimentan
+             directamente el reporte al área financiera y al presupuesto.
+             
+             AUTOMATIZACIÓN:
+             — Todos los valores se calculan sumando los desprendibles
+               individuales aprobados para el período.
+             — Variación vs período anterior: alerta si es > 20%.
+             — Comparativo vs presupuesto: solo para empresa grande
+               con módulo de presupuesto activo.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_resumen_gerencial" aria-labelledby="tit_resumen">
+            <h2 id="tit_resumen">Resumen gerencial del período</h2>
+
+            <table>
+                <caption>
+                    Cifras clave del período — Mayo 2026, 1ra quincena
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Concepto</th>
+                        <th scope="col">Este período ($)</th>
+                        <th scope="col">Período anterior ($)</th>
+                        <th scope="col">Variación (%)</th>
+                        <th scope="col">Observación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- BLOQUE A: LO QUE SE PAGA AL EMPLEADO -->
+                    <tr>
+                        <th scope="rowgroup" colspan="5">
+                            A. Pagos a empleados
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>Total devengado bruto</td>
+                        <td>
+                            <output name="tot_devengado">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_devengado_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_devengado">0%</output>
+                        </td>
+                        <td>Salarios + HE + recargos + aux. transporte</td>
+                    </tr>
+                    <tr>
+                        <td>Total deducciones empleados</td>
+                        <td>
+                            <output name="tot_deducciones">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_deducciones_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_deducciones">0%</output>
+                        </td>
+                        <td>Salud + pensión + rte fuente + embargos + descuentos</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            TOTAL NETO A PAGAR (transferencias bancarias)
+                        </th>
+                        <td>
+                            <output name="tot_neto_pagar"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_neto_pagar_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_neto">0%</output>
+                        </td>
+                        <td>Valor que sale del banco de la empresa</td>
+                    </tr>
+
+                    <!-- BLOQUE B: SEGURIDAD SOCIAL -->
+                    <tr>
+                        <th scope="rowgroup" colspan="5">
+                            B. Aportes seguridad social (empresa + empleado)
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>Salud — aporte total (12.5%)</td>
+                        <td>
+                            <output name="tot_salud">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_salud_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_salud">0%</output>
+                        </td>
+                        <td>Empresa 8.5% + Empleado 4% = 12.5% del IBC</td>
+                    </tr>
+                    <tr>
+                        <td>Pensión — aporte total (16%)</td>
+                        <td>
+                            <output name="tot_pension">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_pension_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_pension">0%</output>
+                        </td>
+                        <td>Empresa 12% + Empleado 4% = 16% del IBC</td>
+                    </tr>
+                    <tr>
+                        <td>ARL — aporte empresa</td>
+                        <td>
+                            <output name="tot_arl">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_arl_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_arl">0%</output>
+                        </td>
+                        <td>Según nivel de riesgo por empleado</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Subtotal PILA (valor a pagar planilla)</th>
+                        <td>
+                            <output name="tot_pila"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_pila_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_pila">0%</output>
+                        </td>
+                        <td>
+                            Vence el día
+                            <output name="fecha_vence_pila">—</output>
+                            del mes siguiente
+                        </td>
+                    </tr>
+
+                    <!-- BLOQUE C: PARAFISCALES -->
+                    <tr>
+                        <th scope="rowgroup" colspan="5">
+                            C. Aportes parafiscales — empresa
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>SENA (2%)</td>
+                        <td>
+                            <output name="tot_sena">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_sena_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_sena">0%</output>
+                        </td>
+                        <td>Exento si todos ganan ≤ 10 SMLMV</td>
+                    </tr>
+                    <tr>
+                        <td>ICBF (3%)</td>
+                        <td>
+                            <output name="tot_icbf">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_icbf_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_icbf">0%</output>
+                        </td>
+                        <td>Exento si todos ganan ≤ 10 SMLMV</td>
+                    </tr>
+                    <tr>
+                        <td>Caja de compensación (4%)</td>
+                        <td>
+                            <output name="tot_caja">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_caja_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_caja">0%</output>
+                        </td>
+                        <td>
+                            Caja:
+                            <output name="nombre_caja_comp">—</output>
+                        </td>
+                    </tr>
+
+                    <!-- BLOQUE D: PROVISIONES -->
+                    <tr>
+                        <th scope="rowgroup" colspan="5">
+                            D. Provisiones prestaciones sociales — causación del período
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>Prima de servicios (8.33%)</td>
+                        <td>
+                            <output name="tot_prima">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_prima_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_prima">0%</output>
+                        </td>
+                        <td>Provisión del período — pago en jun y dic</td>
+                    </tr>
+                    <tr>
+                        <td>Cesantías (8.33%)</td>
+                        <td>
+                            <output name="tot_cesantias">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_cesantias_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_cesantias">0%</output>
+                        </td>
+                        <td>Provisión del período — consignación antes 15 feb</td>
+                    </tr>
+                    <tr>
+                        <td>Intereses sobre cesantías (1% mensual)</td>
+                        <td>
+                            <output name="tot_int_ces">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_int_ces_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_int_ces">0%</output>
+                        </td>
+                        <td>Provisión del período — pago directo en ene</td>
+                    </tr>
+                    <tr>
+                        <td>Vacaciones (4.17%)</td>
+                        <td>
+                            <output name="tot_vac">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_vac_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_vac">0%</output>
+                        </td>
+                        <td>Provisión del período — sobre salario básico</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Subtotal provisiones</th>
+                        <td>
+                            <output name="tot_provisiones"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_provisiones_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_provisiones">0%</output>
+                        </td>
+                        <td>No es pago inmediato — es deuda causada</td>
+                    </tr>
+
+                    <!-- FILA FINAL: COSTO TOTAL -->
+                    <tr>
+                        <th scope="row">
+                            COSTO TOTAL EMPRESA DEL PERÍODO
+                            <br>
+                            <small>
+                                (Neto pagado + PILA empresa + parafiscales + provisiones)
+                            </small>
+                        </th>
+                        <td>
+                            <output name="costo_total_empresa">
+                                <strong>$0</strong>
+                            </output>
+                        </td>
+                        <td>
+                            <output name="costo_total_ant">$0</output>
+                        </td>
+                        <td>
+                            <output name="var_costo_total">0%</output>
+                        </td>
+                        <td>
+                            Equivale al
+                            <output name="pct_costo_sobre_salario">0%</output>
+                            del total de salarios brutos
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- RECOBROS PENDIENTES A EPS/ARL -->
+            <!--
+                IMPACTO EN TU EMPRESA:
+                Cuando pagas incapacidades o licencias que debería
+                cubrir la EPS o la ARL, ese dinero lo debes recobrar.
+                Si no llevas este control, la empresa regala ese dinero.
+                Para la empresa de 2500 empleados puede ser decenas
+                de millones de pesos al año.
+            -->
+            <table aria-label="Recobros pendientes a entidades de seguridad social">
+                <caption>
+                    Recobros pendientes a EPS y ARL — generados en este período
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Empleado</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Entidad</th>
+                        <th scope="col">Días</th>
+                        <th scope="col">Valor a recobrar ($)</th>
+                        <th scope="col">Estado recobro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--
+                        AUTOMATIZACIÓN:
+                        Se genera automáticamente desde las novedades
+                        de incapacidad y licencias de maternidad/paternidad
+                        aprobadas en el período.
+                        Al hacer clic en "Generar cuenta de cobro" →
+                        crea el documento para enviar a la EPS/ARL.
+                        Este valor pasa a cuentas por cobrar en contabilidad.
+                    -->
+                    <tr>
+                        <td colspan="6">
+                            <small>
+                                No hay recobros en este período.
+                                Se generan automáticamente al procesar
+                                novedades de incapacidad.
+                            </small>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="4">Total a recobrar:</th>
+                        <td>
+                            <output name="tot_recobros">$0</output>
+                        </td>
+                        <td>—</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 3 — DETALLE POR EMPLEADO
+             
+             IMPACTO EN TU EMPRESA:
+             Esta es la tabla que el contador y el auxiliar de nómina
+             revisan línea por línea antes de aprobar. Cada fila es un
+             empleado. Cada columna es un concepto de nómina.
+             Si hay un error en la liquidación de algún empleado,
+             aquí se detecta antes de pagar.
+             
+             AUTOMATIZACIÓN:
+             — Se genera automáticamente desde los desprendibles
+               individuales aprobados del período.
+             — Clic en el nombre del empleado → abre su desprendible
+               individual para revisión.
+             — Resalta en amarillo si la variación vs período anterior
+               es > 15% en el neto a pagar.
+             — Resalta en rojo si el neto a pagar es $0 o negativo.
+             — Columna "IBC" es clave: la UGPP audita que el IBC
+               declarado en PILA coincida con el de la nómina.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_detalle_empleados" aria-labelledby="tit_detalle">
+            <h2 id="tit_detalle">Detalle por empleado</h2>
+
+            <!-- FILTROS Y EXPORTACIÓN -->
+            <form method="get" action="consolidado.php" aria-label="Filtrar detalle">
+                <fieldset>
+                    <legend>Filtrar y exportar</legend>
+
+                    <label for="filtro_area_consol">Área:</label>
+                    <select id="filtro_area_consol" name="area">
+                        <option value="">Todas las áreas</option>
+                        <option value="ADM">Administración</option>
+                        <option value="OPE">Operaciones</option>
+                        <option value="VEN">Ventas</option>
+                        <option value="LOG">Logística</option>
+                    </select>
+
+                    <label for="filtro_cc_consol">Centro de costo:</label>
+                    <select id="filtro_cc_consol" name="centro_costo">
+                        <option value="">Todos</option>
+                        <option value="CC01">CC01 — Gerencia</option>
+                        <option value="CC02">CC02 — Planta norte</option>
+                        <option value="CC03">CC03 — Planta sur</option>
+                    </select>
+
+                    <button type="submit">Filtrar</button>
+
+                    <button type="button" id="btn_exportar_excel">
+                        Exportar a Excel
+                    </button>
+                    <button type="button" id="btn_exportar_pdf">
+                        Exportar a PDF
+                    </button>
+                    <!--
+                        AUTOMATIZACIÓN — EXPORTACIÓN EXCEL:
+                        El archivo Excel debe incluir:
+                          - Una hoja por área (para empresa grande)
+                          - Una hoja de totales (igual a esta tabla)
+                          - Una hoja con formato PILA para revisión
+                          - Una hoja de recobros EPS/ARL
+                        
+                        El PDF debe ser el desprendible colectivo
+                        con firma y sello para archivo del contador.
+                    -->
+                </fieldset>
+            </form>
+
+            <!-- TABLA PRINCIPAL DE DETALLE -->
+            <!--
+                NOTA DE DISEÑO:
+                Esta tabla tiene muchas columnas. En pantalla se
+                puede hacer scroll horizontal. En el PDF/Excel
+                se puede dividir en dos tablas: una con devengados
+                y otra con deducciones y parafiscales.
+            -->
+            <div role="region" aria-label="Tabla detalle nómina" tabindex="0">
+                <table id="tabla_detalle_nomina">
+                    <caption>
+                        Consolidado detallado — Mayo 2026, 1ra quincena
+                        <br>
+                        <small>
+                            Valores en pesos colombianos ($).
+                            IBC = Ingreso Base de Cotización (sin aux. transporte).
+                        </small>
+                    </caption>
+                    <thead>
+                        <tr>
+                            <!-- IDENTIFICACIÓN -->
+                            <th scope="col" rowspan="2">Cód.</th>
+                            <th scope="col" rowspan="2">Empleado</th>
+                            <th scope="col" rowspan="2">Cargo</th>
+                            <th scope="col" rowspan="2">CC</th>
+                            <th scope="col" rowspan="2">Días lab.</th>
+
+                            <!-- DEVENGADO -->
+                            <th scope="colgroup" colspan="6">Devengado</th>
+
+                            <!-- DEDUCCIONES -->
+                            <th scope="colgroup" colspan="5">Deducciones empleado</th>
+
+                            <!-- NETO -->
+                            <th scope="col" rowspan="2">Neto a pagar</th>
+
+                            <!-- IBC -->
+                            <th scope="col" rowspan="2">IBC</th>
+
+                            <!-- COSTO EMPRESA -->
+                            <th scope="colgroup" colspan="6">Costo empresa</th>
+
+                            <!-- PROVISIONES -->
+                            <th scope="colgroup" colspan="4">Provisiones</th>
+
+                            <!-- COSTO TOTAL -->
+                            <th scope="col" rowspan="2">Costo total</th>
+                        </tr>
+                        <tr>
+                            <!-- SUB-ENCABEZADOS DEVENGADO -->
+                            <th scope="col">Salario básico</th>
+                            <th scope="col">Aux. transp.</th>
+                            <th scope="col">H. extras</th>
+                            <th scope="col">Recargos</th>
+                            <th scope="col">Comisiones</th>
+                            <th scope="col">Total dev.</th>
+
+                            <!-- SUB-ENCABEZADOS DEDUCCIONES -->
+                            <th scope="col">Salud emp.</th>
+                            <th scope="col">Pensión emp.</th>
+                            <th scope="col">Rte. fuente</th>
+                            <th scope="col">Embargos</th>
+                            <th scope="col">Total ded.</th>
+
+                            <!-- SUB-ENCABEZADOS COSTO EMPRESA -->
+                            <th scope="col">Salud emp.</th>
+                            <th scope="col">Pensión emp.</th>
+                            <th scope="col">ARL</th>
+                            <th scope="col">SENA</th>
+                            <th scope="col">ICBF</th>
+                            <th scope="col">Caja comp.</th>
+
+                            <!-- SUB-ENCABEZADOS PROVISIONES -->
+                            <th scope="col">Prima</th>
+                            <th scope="col">Cesantías</th>
+                            <th scope="col">Int. ces.</th>
+                            <th scope="col">Vacaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--
+                            AUTOMATIZACIÓN:
+                            Cada fila se genera desde el desprendible
+                            aprobado del empleado para este período.
+                            Query SQL sugerido:
+                            SELECT e.codigo_empleado, e.nombre, c.nombre_cargo,
+                                   cc.codigo_cc, n.dias_trabajados,
+                                   n.salario_base_calculado, n.auxilio_transporte,
+                                   n.total_he, n.total_recargos, n.comisiones,
+                                   n.total_devengado, n.salud_empleado,
+                                   n.pension_empleado, n.retencion_fuente,
+                                   n.embargos, n.total_deducciones,
+                                   n.neto_pagar, n.ibc,
+                                   n.salud_empresa, n.pension_empresa,
+                                   n.arl, n.sena, n.icbf, n.caja_compensacion,
+                                   n.prima, n.cesantias, n.intereses_cesantias,
+                                   n.vacaciones, n.costo_total_empresa
+                            FROM nomina_liquidaciones n
+                            JOIN empleados e ON n.id_empleado = e.id_empleado
+                            JOIN cargos c ON e.id_cargo = c.id_cargo
+                            JOIN centros_costo cc ON e.id_centro_costo = cc.id_cc
+                            WHERE n.id_periodo = :id_periodo
+                            AND n.estado_liquidacion = 'aprobada'
+                            ORDER BY cc.codigo_cc, e.primer_apellido
+                        -->
+
+                        <!-- FILA EJEMPLO 1 -->
+                        <tr>
+                            <td>OPE-001</td>
+                            <td>
+                                <a href="desprendible.php?id=1&periodo=2026-05-Q1"
+                                   aria-label="Ver desprendible de Juan Pérez">
+                                    Pérez G., Juan C.
+                                </a>
+                            </td>
+                            <td>Operario</td>
+                            <td>CC02</td>
+                            <td>
+                                <output name="dias_emp1">15</output>
+                            </td>
+                            <td>
+                                <output name="sal_emp1">$711.750</output>
+                            </td>
+                            <td>
+                                <output name="aux_emp1">$100.000</output>
+                            </td>
+                            <td>
+                                <output name="he_emp1">$0</output>
+                            </td>
+                            <td>
+                                <output name="rec_emp1">$0</output>
+                            </td>
+                            <td>
+                                <output name="com_emp1">$0</output>
+                            </td>
+                            <td>
+                                <output name="tdev_emp1">$811.750</output>
+                            </td>
+                            <td>
+                                <output name="sal_d_emp1">$28.470</output>
+                            </td>
+                            <td>
+                                <output name="pen_d_emp1">$28.470</output>
+                            </td>
+                            <td>
+                                <output name="rte_emp1">$0</output>
+                            </td>
+                            <td>
+                                <output name="emb_emp1">$0</output>
+                            </td>
+                            <td>
+                                <output name="tded_emp1">$56.940</output>
+                            </td>
+                            <td>
+                                <output name="neto_emp1">
+                                    <strong>$754.810</strong>
+                                </output>
+                            </td>
+                            <td>
+                                <output name="ibc_emp1">$711.750</output>
+                            </td>
+                            <td>
+                                <output name="sal_e_emp1">$60.499</output>
+                            </td>
+                            <td>
+                                <output name="pen_e_emp1">$85.410</output>
+                            </td>
+                            <td>
+                                <output name="arl_emp1">$17.318</output>
+                            </td>
+                            <td>
+                                <output name="sena_emp1">$14.235</output>
+                            </td>
+                            <td>
+                                <output name="icbf_emp1">$21.353</output>
+                            </td>
+                            <td>
+                                <output name="caja_emp1">$28.470</output>
+                            </td>
+                            <td>
+                                <output name="prima_emp1">$67.619</output>
+                            </td>
+                            <td>
+                                <output name="ces_emp1">$67.619</output>
+                            </td>
+                            <td>
+                                <output name="intces_emp1">$676</output>
+                            </td>
+                            <td>
+                                <output name="vac_emp1">$33.833</output>
+                            </td>
+                            <td>
+                                <output name="ctot_emp1">
+                                    <strong>$1.151.842</strong>
+                                </output>
+                            </td>
+                        </tr>
+                        <!-- FIN FILA EJEMPLO -->
+                    </tbody>
+
+                    <tfoot>
+                        <!-- FILA DE TOTALES -->
+                        <tr>
+                            <th scope="row" colspan="5">
+                                TOTALES DEL PERÍODO
+                            </th>
+                            <td>
+                                <output name="tot_sal_basic">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_aux_t">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_he">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_recarg">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_comis">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_dev_total">
+                                    <strong>$0</strong>
+                                </output>
+                            </td>
+                            <td>
+                                <output name="tot_sal_d">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_pen_d">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_rte">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_emb">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_ded_total">
+                                    <strong>$0</strong>
+                                </output>
+                            </td>
+                            <td>
+                                <output name="tot_neto_total">
+                                    <strong>$0</strong>
+                                </output>
+                            </td>
+                            <td>
+                                <output name="tot_ibc_total">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_sal_e">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_pen_e">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_arl_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_sena_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_icbf_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_caja_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_prima_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_ces_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_intces_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_vac_f">$0</output>
+                            </td>
+                            <td>
+                                <output name="tot_ctot_final">
+                                    <strong>$0</strong>
+                                </output>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 4 — RESUMEN POR ÁREA Y CENTRO DE COSTO
+             
+             IMPACTO EN TU EMPRESA:
+             Para la empresa pequeña (5-30 personas) te dice cuánto
+             cuesta cada área. Para la de 2.500 empleados es el insumo
+             del presupuesto mensual: cuánto gastó cada gerencia vs
+             lo que tenía aprobado.
+             
+             AUTOMATIZACIÓN:
+             — Se genera agrupando la tabla de detalle por id_area
+               y id_centro_costo.
+             — Si hay módulo de presupuesto activo → mostrar columna
+               "Presupuesto" y columna "Desviación".
+             — Este resumen genera los asientos contables por CC.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_resumen_area" aria-labelledby="tit_area">
+            <h2 id="tit_area">Resumen por área y centro de costo</h2>
+
+            <table>
+                <caption>
+                    Costo de nómina por área — Mayo 2026, 1ra quincena
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Área</th>
+                        <th scope="col">Centro de costo</th>
+                        <th scope="col">Empleados</th>
+                        <th scope="col">Neto pagado ($)</th>
+                        <th scope="col">Seg. social emp. ($)</th>
+                        <th scope="col">Parafiscales ($)</th>
+                        <th scope="col">Provisiones ($)</th>
+                        <th scope="col">Costo total ($)</th>
+                        <th scope="col">% del total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--
+                        AUTOMATIZACIÓN: Generado por GROUP BY id_area, id_cc
+                    -->
+                    <tr>
+                        <td>Operaciones</td>
+                        <td>CC02 — Planta norte</td>
+                        <td>
+                            <output name="emp_cc02">5</output>
+                        </td>
+                        <td>
+                            <output name="neto_cc02">$0</output>
+                        </td>
+                        <td>
+                            <output name="ss_cc02">$0</output>
+                        </td>
+                        <td>
+                            <output name="para_cc02">$0</output>
+                        </td>
+                        <td>
+                            <output name="prov_cc02">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_cc02">$0</output>
+                        </td>
+                        <td>
+                            <output name="pct_cc02">0%</output>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Administración</td>
+                        <td>CC01 — Gerencia</td>
+                        <td>
+                            <output name="emp_cc01">3</output>
+                        </td>
+                        <td>
+                            <output name="neto_cc01">$0</output>
+                        </td>
+                        <td>
+                            <output name="ss_cc01">$0</output>
+                        </td>
+                        <td>
+                            <output name="para_cc01">$0</output>
+                        </td>
+                        <td>
+                            <output name="prov_cc01">$0</output>
+                        </td>
+                        <td>
+                            <output name="tot_cc01">$0</output>
+                        </td>
+                        <td>
+                            <output name="pct_cc01">0%</output>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="3">TOTAL EMPRESA</th>
+                        <td>
+                            <output name="tot_neto_area"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_ss_area"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_para_area"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_prov_area"><strong>$0</strong></output>
+                        </td>
+                        <td>
+                            <output name="tot_costo_area"><strong>$0</strong></output>
+                        </td>
+                        <td>100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 5 — OBLIGACIONES A PAGAR Y FECHAS DE VENCIMIENTO
+             
+             IMPACTO EN TU EMPRESA:
+             Esta sección es un calendario de pagos. Después de cerrar
+             la nómina quedan obligaciones concretas con fechas límite.
+             Si se paga tarde hay intereses y sanciones de la UGPP
+             que pueden ser muy costosas, especialmente para la empresa
+             de 2.500 empleados donde los montos son grandes.
+             
+             AUTOMATIZACIÓN:
+             — Se genera automáticamente al aprobar el consolidado.
+             — El sistema debe enviar alertas 5 días antes de cada
+               fecha de vencimiento al responsable de tesorería.
+             — Al registrar el pago de cada obligación, el estado
+               cambia a "Pagado" y queda la trazabilidad del comprobante.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_obligaciones" aria-labelledby="tit_obligaciones">
+            <h2 id="tit_obligaciones">Obligaciones a pagar y calendario</h2>
+
+            <table>
+                <caption>
+                    Pagos que genera este período — con fechas límite legales
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Obligación</th>
+                        <th scope="col">Beneficiario</th>
+                        <th scope="col">Valor ($)</th>
+                        <th scope="col">Fecha límite</th>
+                        <th scope="col">Consecuencia del no pago</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Comprobante pago</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            Transferencias bancarias nómina
+                            <br>
+                            <small>Dispersión a cuentas empleados</small>
+                        </td>
+                        <td>Empleados (dispersión)</td>
+                        <td>
+                            <output name="val_transferencias">$0</output>
+                        </td>
+                        <td>
+                            <time datetime="2026-05-15">15/05/2026</time>
+                            <br>
+                            <small>Día de pago pactado</small>
+                        </td>
+                        <td>Mora laboral + intereses</td>
+                        <td>
+                            <output name="estado_transferencias">Pendiente</output>
+                        </td>
+                        <td>
+                            <input type="text" name="comp_transferencias"
+                                   placeholder="Número de comprobante">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            PILA — Seguridad social
+                            <br>
+                            <small>Salud + Pensión + ARL</small>
+                        </td>
+                        <td>Operador PILA (SOI, Aportes en Línea, etc.)</td>
+                        <td>
+                            <output name="val_pila">$0</output>
+                        </td>
+                        <td>
+                            <!--
+                                AUTOMATIZACIÓN — FECHA VENCIMIENTO PILA:
+                                La fecha vence según los últimos 2 dígitos del NIT.
+                                NIT termina en 00–09 → día 2 del mes siguiente
+                                NIT termina en 10–19 → día 3 del mes siguiente
+                                ... (tabla completa en Decreto 1990/2016)
+                                El sistema debe calcularla automáticamente.
+                            -->
+                            <output name="fecha_vence_pila_cal">
+                                Se calcula según NIT de la empresa
+                            </output>
+                            <br>
+                            <small>Decreto 1990/2016 — según último dígito NIT</small>
+                        </td>
+                        <td>
+                            Interés mora 1.5% mensual + sanción UGPP
+                            hasta 200 SMLMV
+                        </td>
+                        <td>
+                            <output name="estado_pila">Pendiente</output>
+                        </td>
+                        <td>
+                            <input type="text" name="comp_pila"
+                                   placeholder="Número planilla PILA">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Parafiscales — SENA
+                            <br>
+                            <small>2% del IBC (si aplica)</small>
+                        </td>
+                        <td>SENA</td>
+                        <td>
+                            <output name="val_sena_pago">$0</output>
+                        </td>
+                        <td>
+                            <small>Se paga junto con la PILA</small>
+                        </td>
+                        <td>Sanción + intereses UGPP</td>
+                        <td>
+                            <output name="estado_sena_pago">Incluido en PILA</output>
+                        </td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Parafiscales — ICBF
+                            <br>
+                            <small>3% del IBC (si aplica)</small>
+                        </td>
+                        <td>ICBF</td>
+                        <td>
+                            <output name="val_icbf_pago">$0</output>
+                        </td>
+                        <td>
+                            <small>Se paga junto con la PILA</small>
+                        </td>
+                        <td>Sanción + intereses UGPP</td>
+                        <td>
+                            <output name="estado_icbf_pago">Incluido en PILA</output>
+                        </td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Caja de compensación familiar
+                            <br>
+                            <small>4% del IBC</small>
+                        </td>
+                        <td>
+                            <output name="nombre_caja_pago">—</output>
+                        </td>
+                        <td>
+                            <output name="val_caja_pago">$0</output>
+                        </td>
+                        <td>
+                            <small>Se paga junto con la PILA</small>
+                        </td>
+                        <td>Sanción + pérdida de beneficios empleados</td>
+                        <td>
+                            <output name="estado_caja_pago">Incluido en PILA</output>
+                        </td>
+                        <td>—</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Retención en la fuente
+                            <br>
+                            <small>Retenida a empleados en este período</small>
+                        </td>
+                        <td>DIAN</td>
+                        <td>
+                            <output name="val_rte_fuente_pago">$0</output>
+                        </td>
+                        <td>
+                            <!--
+                                La retención se declara y paga en el formulario 350,
+                                dentro de los primeros 17 días hábiles del mes
+                                siguiente al que fue retenida.
+                            -->
+                            <output name="fecha_vence_rte">
+                                Se calcula según NIT — Formulario 350
+                            </output>
+                        </td>
+                        <td>
+                            Sanción DIAN + intereses corrientes
+                        </td>
+                        <td>
+                            <output name="estado_rte_pago">Pendiente</output>
+                        </td>
+                        <td>
+                            <input type="text" name="comp_rte"
+                                   placeholder="Número formulario 350">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Consignaciones por embargo judicial
+                            <br>
+                            <small>A la orden de los juzgados</small>
+                        </td>
+                        <td>Juzgado(s) ordenadores</td>
+                        <td>
+                            <output name="val_embargos_pago">$0</output>
+                        </td>
+                        <td>
+                            Misma fecha que el pago de nómina
+                            <br>
+                            <small>El no pago es desacato al juez</small>
+                        </td>
+                        <td>
+                            Desacato judicial — multa y arresto al representante legal
+                        </td>
+                        <td>
+                            <output name="estado_embargos_pago">Pendiente</output>
+                        </td>
+                        <td>
+                            <input type="text" name="comp_embargo"
+                                   placeholder="Comprobante consignación">
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="2">
+                            TOTAL OBLIGACIONES INMEDIATAS
+                            <br>
+                            <small>(Transferencias + PILA + Embargos)</small>
+                        </th>
+                        <td>
+                            <output name="tot_obligaciones">
+                                <strong>$0</strong>
+                            </output>
+                        </td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 6 — APROBACIÓN Y CIERRE DEL PERÍODO
+             
+             IMPACTO EN TU EMPRESA:
+             Esta es la firma digital del consolidado. Una vez que
+             el responsable aprueba, el sistema genera el comprobante
+             contable de nómina (asiento en el libro diario) y queda
+             bloqueado para modificaciones. Cualquier corrección
+             posterior requiere una nota de ajuste — igual que
+             en contabilidad formal.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_aprobacion" aria-labelledby="tit_aprobacion">
+            <h2 id="tit_aprobacion">Aprobación y cierre del período</h2>
+
+            <form id="form_aprobacion" action="aprobar_consolidado.php"
+                  method="post">
+
+                <input type="hidden" name="id_periodo" value="">
+
+                <fieldset>
+                    <legend>Revisión previa al cierre</legend>
+
+                    <!--
+                        CHECKLIST OBLIGATORIO:
+                        El responsable debe confirmar explícitamente
+                        cada punto antes de poder cerrar el período.
+                        Esto queda registrado en la BD como evidencia
+                        de que el cierre fue consciente y revisado.
+                    -->
+                    <p>
+                        Confirme que revisó cada punto antes de cerrar:
+                    </p>
+
+                    <label>
+                        <input type="checkbox" name="check_novedades"
+                               value="1" required>
+                        Todas las novedades del período están aprobadas
+                        y reflejadas en las liquidaciones.
+                    </label>
+
+                    <label>
+                        <input type="checkbox" name="check_netos"
+                               value="1" required>
+                        Verifiqué que ningún neto a pagar sea negativo
+                        ni inusualmente alto o bajo.
+                    </label>
+
+                    <label>
+                        <input type="checkbox" name="check_ibc"
+                               value="1" required>
+                        Los valores de IBC son correctos para todos
+                        los empleados (sin incluir auxilio de transporte).
+                    </label>
+
+                    <label>
+                        <input type="checkbox" name="check_nuevos"
+                               value="1" required>
+                        Los empleados nuevos del período tienen todas
+                        las afiliaciones a seguridad social activas.
+                    </label>
+
+                    <label>
+                        <input type="checkbox" name="check_retiros"
+                               value="1" required>
+                        Los empleados retirados en el período tienen
+                        iniciado el proceso de liquidación definitiva.
+                    </label>
+
+                    <label>
+                        <input type="checkbox" name="check_embargos"
+                               value="1" required>
+                        Los valores de embargo están descontados y
+                        listos para consignar a los juzgados.
+                    </label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Firma del responsable</legend>
+
+                    <label for="elaborado_consolid">Elaborado por:</label>
+                    <input type="text" id="elaborado_consolid"
+                           name="elaborado_por" required
+                           placeholder="Nombre completo del auxiliar de nómina">
+
+                    <label for="revisado_consolid">Revisado por (contador):</label>
+                    <input type="text" id="revisado_consolid"
+                           name="revisado_por"
+                           placeholder="Nombre completo del contador">
+
+                    <label for="aprobado_consolid">
+                        Aprobado por (gerente o representante legal):
+                    </label>
+                    <input type="text" id="aprobado_consolid"
+                           name="aprobado_por" required
+                           placeholder="Nombre completo del aprobador">
+
+                    <label for="observaciones_cierre">
+                        Observaciones del cierre:
+                    </label>
+                    <textarea id="observaciones_cierre"
+                              name="observaciones_cierre"
+                              rows="3" maxlength="1000"
+                              placeholder="Anote aquí cualquier situación especial del período: empleados con novedades complejas, diferencias vs período anterior, acuerdos de pago, etc.">
+                    </textarea>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Acciones de cierre</legend>
+
+                    <!--
+                        FLUJO DE ACCIONES AL CERRAR:
+                        
+                        1. guardar_borrador:
+                           → Solo guarda el estado sin cerrar.
+                           → Permite seguir editando.
+                        
+                        2. aprobar_consolidado:
+                           → Cambia estado período a "Aprobado".
+                           → Genera automáticamente el comprobante
+                             contable de nómina (asiento Debe/Haber).
+                           → Habilita el botón "Generar PILA".
+                           → Habilita el botón "Generar archivo dispersión".
+                           → Envía desprendibles individuales por correo
+                             a cada empleado.
+                           → IRREVERSIBLE para las liquidaciones individuales.
+                        
+                        3. cerrar_periodo:
+                           → Solo disponible después de aprobar.
+                           → Cambia estado período a "Cerrado".
+                           → Archiva todas las liquidaciones.
+                           → Crea automáticamente el período siguiente.
+                           → Actualiza acumulados de cada empleado.
+                           → COMPLETAMENTE IRREVERSIBLE.
+                    -->
+
+                    <button type="submit" name="accion" value="guardar_borrador">
+                        Guardar borrador
+                    </button>
+
+                    <button type="submit" name="accion"
+                            value="aprobar_consolidado"
+                            aria-describedby="ayuda_aprobar">
+                        Aprobar consolidado y generar comprobante contable
+                    </button>
+                    <small id="ayuda_aprobar">
+                        Genera el asiento contable de nómina y habilita
+                        la generación de la PILA y el archivo de pagos.
+                    </small>
+
+                    <button type="button" id="btn_generar_pila"
+                            aria-describedby="ayuda_pila">
+                        Generar archivo PILA
+                    </button>
+                    <small id="ayuda_pila">
+                        Disponible solo después de aprobar el consolidado.
+                        Genera el archivo para cargar en el operador de PILA.
+                    </small>
+
+                    <button type="button" id="btn_generar_dispersion"
+                            aria-describedby="ayuda_dispersion">
+                        Generar archivo de dispersión bancaria
+                    </button>
+                    <small id="ayuda_dispersion">
+                        Genera el archivo ACH para pago masivo a las
+                        cuentas de los empleados. Compatible con
+                        Bancolombia, Davivienda, Banco de Bogotá.
+                        Para empresa de 2.500 empleados: paga todos
+                        los salarios con un solo archivo.
+                    </small>
+
+                    <button type="submit" name="accion"
+                            value="cerrar_periodo"
+                            aria-describedby="ayuda_cierre_final">
+                        Cerrar período definitivamente
+                    </button>
+                    <small id="ayuda_cierre_final">
+                        Esta acción es IRREVERSIBLE. El período quedará
+                        archivado y no podrá modificarse. Solo disponible
+                        después de aprobar el consolidado.
+                    </small>
+                </fieldset>
+
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 7 — ESTRUCTURA DE BASE DE DATOS
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_bd" aria-labelledby="tit_bd">
+            <h2 id="tit_bd">Estructura de base de datos</h2>
+
+            <article>
+                <h3>Tabla: periodos_nomina</h3>
+                <p>
+                    <small>
+                        Es la tabla que controla el ciclo de vida de cada
+                        nómina. Todo el sistema gira alrededor de ella.
+                        Sin esta tabla no puedes saber qué período está
+                        abierto, cuál está cerrado ni cuál ya fue pagado.
+                    </small>
+                </p>
+                <table>
+                    <caption>Campos de la tabla periodos_nomina</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Campo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Regla crítica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id_periodo</code></td>
+                            <td>INT PK autoincrement</td>
+                            <td>Identificador único del período</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>codigo_periodo</code></td>
+                            <td>VARCHAR(20) UNIQUE</td>
+                            <td>Código legible (ej: 2026-05-Q1)</td>
+                            <td>Formato: AAAA-MM-Q1 o Q2 o M (mensual)</td>
+                        </tr>
+                        <tr>
+                            <td><code>descripcion</code></td>
+                            <td>VARCHAR(100)</td>
+                            <td>Texto descriptivo del período</td>
+                            <td>Ej: "Mayo 2026 — 1ra quincena"</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_inicio</code></td>
+                            <td>DATE</td>
+                            <td>Primer día del período</td>
+                            <td>No puede solaparse con otro período abierto</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_fin</code></td>
+                            <td>DATE</td>
+                            <td>Último día del período</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_pago</code></td>
+                            <td>DATE</td>
+                            <td>Fecha en que se transfiere a empleados</td>
+                            <td>La que aparece en el desprendible</td>
+                        </tr>
+                        <tr>
+                            <td><code>tipo_nomina</code></td>
+                            <td>ENUM</td>
+                            <td>regular/prima/vacaciones/liquidacion</td>
+                            <td>Determina qué cálculos aplican</td>
+                        </tr>
+                        <tr>
+                            <td><code>estado_periodo</code></td>
+                            <td>ENUM</td>
+                            <td>abierto/revision/aprobado/cerrado/pagado</td>
+                            <td>
+                                Solo puede haber UN período en estado
+                                "abierto" por tipo de nómina a la vez.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>total_neto_pagar</code></td>
+                            <td>DECIMAL(18,2)</td>
+                            <td>Suma de todos los netos del período</td>
+                            <td>Se actualiza al aprobar el consolidado</td>
+                        </tr>
+                        <tr>
+                            <td><code>total_costo_empresa</code></td>
+                            <td>DECIMAL(18,2)</td>
+                            <td>Costo total incluyendo provisiones</td>
+                            <td>Se actualiza al aprobar el consolidado</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_elaboro</code></td>
+                            <td>INT FK → usuarios</td>
+                            <td>Quién elaboró el consolidado</td>
+                            <td>Trazabilidad UGPP</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_aprobo</code></td>
+                            <td>INT FK → usuarios</td>
+                            <td>Quién aprobó el consolidado</td>
+                            <td>Obligatorio para cerrar el período</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_aprobacion</code></td>
+                            <td>DATETIME</td>
+                            <td>Cuándo fue aprobado</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_cierre</code></td>
+                            <td>DATETIME</td>
+                            <td>Cuándo fue cerrado definitivamente</td>
+                            <td>Solo se llena una vez — no modificable</td>
+                        </tr>
+                        <tr>
+                            <td><code>observaciones_cierre</code></td>
+                            <td>TEXT</td>
+                            <td>Notas del responsable al cerrar</td>
+                            <td>Quedan como soporte del período</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article>
+                <h3>Asiento contable que genera el cierre</h3>
+                <p>
+                    <small>
+                        Al aprobar el consolidado el sistema debe generar
+                        automáticamente este asiento en el libro diario.
+                        Las cuentas son del PUC colombiano (Decreto 2649/93).
+                        Este asiento conecta el módulo de nómina con
+                        el módulo de contabilidad.
+                    </small>
+                </p>
+                <table>
+                    <caption>
+                        Asiento contable de nómina — estructura modelo PUC Colombia
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Cuenta PUC</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Débito ($)</th>
+                            <th scope="col">Crédito ($)</th>
+                            <th scope="col">Origen del valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>5105</code></td>
+                            <td>Gasto — Salarios y jornales</td>
+                            <td>Total salarios básicos</td>
+                            <td>—</td>
+                            <td>Suma salario_base_calculado todos los emp.</td>
+                        </tr>
+                        <tr>
+                            <td><code>5110</code></td>
+                            <td>Gasto — Horas extras y recargos</td>
+                            <td>Total HE + recargos</td>
+                            <td>—</td>
+                            <td>Suma HE y recargos todos los emp.</td>
+                        </tr>
+                        <tr>
+                            <td><code>5115</code></td>
+                            <td>Gasto — Auxilio de transporte</td>
+                            <td>Total auxilio transporte</td>
+                            <td>—</td>
+                            <td>Suma auxilio_transporte todos los emp.</td>
+                        </tr>
+                        <tr>
+                            <td><code>5120</code></td>
+                            <td>Gasto — Cesantías (provisión)</td>
+                            <td>Total provisión cesantías</td>
+                            <td>—</td>
+                            <td>8.33% del devengado total</td>
+                        </tr>
+                        <tr>
+                            <td><code>5125</code></td>
+                            <td>Gasto — Intereses sobre cesantías</td>
+                            <td>Total intereses cesantías</td>
+                            <td>—</td>
+                            <td>1% mensual sobre cesantías acumuladas</td>
+                        </tr>
+                        <tr>
+                            <td><code>5130</code></td>
+                            <td>Gasto — Prima de servicios (provisión)</td>
+                            <td>Total provisión prima</td>
+                            <td>—</td>
+                            <td>8.33% del devengado total</td>
+                        </tr>
+                        <tr>
+                            <td><code>5135</code></td>
+                            <td>Gasto — Vacaciones (provisión)</td>
+                            <td>Total provisión vacaciones</td>
+                            <td>—</td>
+                            <td>4.17% del salario básico total</td>
+                        </tr>
+                        <tr>
+                            <td><code>5140</code></td>
+                            <td>Gasto — Aportes EPS empresa</td>
+                            <td>Total salud empresa</td>
+                            <td>—</td>
+                            <td>8.5% del IBC total</td>
+                        </tr>
+                        <tr>
+                            <td><code>5145</code></td>
+                            <td>Gasto — Aportes pensión empresa</td>
+                            <td>Total pensión empresa</td>
+                            <td>—</td>
+                            <td>12% del IBC total</td>
+                        </tr>
+                        <tr>
+                            <td><code>5150</code></td>
+                            <td>Gasto — ARL</td>
+                            <td>Total ARL</td>
+                            <td>—</td>
+                            <td>% según nivel por empleado × IBC</td>
+                        </tr>
+                        <tr>
+                            <td><code>5155</code></td>
+                            <td>Gasto — SENA</td>
+                            <td>Total SENA</td>
+                            <td>—</td>
+                            <td>2% del IBC total (si aplica)</td>
+                        </tr>
+                        <tr>
+                            <td><code>5160</code></td>
+                            <td>Gasto — ICBF</td>
+                            <td>Total ICBF</td>
+                            <td>—</td>
+                            <td>3% del IBC total (si aplica)</td>
+                        </tr>
+                        <tr>
+                            <td><code>5165</code></td>
+                            <td>Gasto — Caja de compensación</td>
+                            <td>Total caja compensación</td>
+                            <td>—</td>
+                            <td>4% del IBC total</td>
+                        </tr>
+                        <tr>
+                            <td><code>2335</code></td>
+                            <td>Pasivo — Nómina por pagar</td>
+                            <td>—</td>
+                            <td>Total neto a pagar empleados</td>
+                            <td>Se cancela al hacer transferencias</td>
+                        </tr>
+                        <tr>
+                            <td><code>2370</code></td>
+                            <td>Pasivo — Retenciones y aportes laborales</td>
+                            <td>—</td>
+                            <td>Salud emp. + Pensión emp. + Rte fuente</td>
+                            <td>Descuentos hechos al empleado por pagar</td>
+                        </tr>
+                        <tr>
+                            <td><code>2610</code></td>
+                            <td>Pasivo — Cesantías consolidadas</td>
+                            <td>—</td>
+                            <td>Provisión cesantías del período</td>
+                            <td>Se cancela al consignar al fondo</td>
+                        </tr>
+                        <tr>
+                            <td><code>2615</code></td>
+                            <td>Pasivo — Intereses sobre cesantías</td>
+                            <td>—</td>
+                            <td>Provisión intereses del período</td>
+                            <td>Se cancela al pagar en enero</td>
+                        </tr>
+                        <tr>
+                            <td><code>2620</code></td>
+                            <td>Pasivo — Prima de servicios</td>
+                            <td>—</td>
+                            <td>Provisión prima del período</td>
+                            <td>Se cancela en jun y dic</td>
+                        </tr>
+                        <tr>
+                            <td><code>2625</code></td>
+                            <td>Pasivo — Vacaciones consolidadas</td>
+                            <td>—</td>
+                            <td>Provisión vacaciones del período</td>
+                            <td>Se cancela al pagar vacaciones</td>
+                        </tr>
+                        <tr>
+                            <td><code>2365</code></td>
+                            <td>Pasivo — Aportes nómina por pagar (EPS/pensión/ARL)</td>
+                            <td>—</td>
+                            <td>Salud emp. + Pensión emp. + ARL (empresa)</td>
+                            <td>Se cancela al pagar la PILA</td>
+                        </tr>
+                        <tr>
+                            <td><code>2367</code></td>
+                            <td>Pasivo — Parafiscales por pagar</td>
+                            <td>—</td>
+                            <td>SENA + ICBF + Caja compensación</td>
+                            <td>Se cancela al pagar la PILA</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row" colspan="2">
+                                TOTAL (debe = haber)
+                            </th>
+                            <td>
+                                <output name="total_debe_asiento">$0</output>
+                            </td>
+                            <td>
+                                <output name="total_haber_asiento">$0</output>
+                            </td>
+                            <td>
+                                Si no cuadran → error en los cálculos de nómina
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </article>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>
+            <small>
+                MY_BUSINESS S.A.S. | Consolidado Mensual de Nómina v1.0 |
+                Marco legal: CST · Ley 100/93 · Decreto 1990/2016 (PILA) ·
+                Decreto 2649/93 (PUC) · Resolución UGPP |
+                Conservación: mínimo 10 años por normativa DIAN y UGPP
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>

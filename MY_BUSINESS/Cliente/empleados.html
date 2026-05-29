@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Empleados y Contratos — MY_BUSINESS</title>
+</head>
+<body>
+
+    <header>
+        <hgroup>
+            <h1>MY_BUSINESS S.A.S.</h1>
+            <p>NIT: 000.000.000-0</p>
+        </hgroup>
+        <nav aria-label="Navegación del módulo de empleados">
+            <ol>
+                <li><a href="#sec_listado">Listado de empleados</a></li>
+                <li><a href="#sec_nuevo_empleado">Crear / editar empleado</a></li>
+                <li><a href="#sec_contrato">Contrato laboral</a></li>
+                <li><a href="#sec_seguridad_social">Seguridad social</a></li>
+                <li><a href="#sec_datos_bancarios">Datos bancarios</a></li>
+                <li><a href="#sec_documentos">Documentos y anexos</a></li>
+            </ol>
+        </nav>
+    </header>
+
+    <hr>
+
+    <main>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECCIÓN 1: LISTADO / BÚSQUEDA DE EMPLEADOS
+             AUTOMATIZACIONES:
+               - Filtros combinables: estado, área, cargo, tipo contrato
+               - Búsqueda en tiempo real por nombre o cédula (AJAX)
+               - Indicador visual de estado: activo / suspendido / retirado
+               - Botón "Nueva nómina" vincula directamente a formulario_nomina
+                 pasando id_empleado como parámetro GET
+               - Alerta si empleado tiene contrato próximo a vencer (≤ 30 días)
+               - Alerta si hay documentos vencidos (cédula, RH, vacunas, etc.)
+        ═══════════════════════════════════════════════════════════════ -->
+        <section id="sec_listado" aria-labelledby="titulo_listado">
+            <h2 id="titulo_listado">Empleados</h2>
+
+            <!-- BARRA DE ACCIONES PRINCIPALES -->
+            <nav aria-label="Acciones del listado">
+                <!--
+                    btn_nuevo_empleado → redirige a #sec_nuevo_empleado con modo=crear
+                    btn_importar_masivo → abre modal de carga Excel/CSV
+                        (útil para empresa de 2500 empleados)
+                    btn_exportar → genera Excel con todos los empleados activos
+                    btn_reporte_planta → PDF con planta de personal para UGPP/DIAN
+                -->
+                <button type="button" id="btn_nuevo_empleado">+ Nuevo empleado</button>
+                <button type="button" id="btn_importar_masivo"
+                        aria-describedby="ayuda_importar">
+                    Importar desde Excel
+                </button>
+                <small id="ayuda_importar">
+                    Para empresas con muchos empleados. Plantilla descargable.
+                </small>
+                <button type="button" id="btn_exportar_listado">Exportar listado</button>
+                <button type="button" id="btn_reporte_planta">Reporte planta de personal</button>
+            </nav>
+
+            <!-- FILTROS DE BÚSQUEDA -->
+            <form id="form_busqueda_empleados" method="get" action="empleados.php"
+                  aria-label="Filtros de búsqueda de empleados">
+                <fieldset>
+                    <legend>Filtrar empleados</legend>
+
+                    <label for="buscar_nombre_cedula">Nombre o cédula:</label>
+                    <input type="search" id="buscar_nombre_cedula"
+                           name="q" placeholder="Ej: Juan Pérez o 12345678"
+                           autocomplete="off">
+
+                    <label for="filtro_estado">Estado:</label>
+                    <select id="filtro_estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="activo" selected>Activo</option>
+                        <option value="suspendido">Suspendido</option>
+                        <option value="vacaciones">En vacaciones</option>
+                        <option value="incapacidad">En incapacidad</option>
+                        <option value="retirado">Retirado</option>
+                    </select>
+
+                    <label for="filtro_area">Área / Departamento:</label>
+                    <select id="filtro_area" name="area">
+                        <option value="">Todas las áreas</option>
+                        <option value="ADM">Administración</option>
+                        <option value="OPE">Operaciones / Producción</option>
+                        <option value="VEN">Ventas</option>
+                        <option value="LOG">Logística</option>
+                        <option value="TEC">Tecnología</option>
+                        <option value="FIN">Financiero / Contabilidad</option>
+                        <option value="RH">Recursos Humanos</option>
+                        <option value="SEG">Seguridad</option>
+                    </select>
+
+                    <label for="filtro_tipo_contrato">Tipo de contrato:</label>
+                    <select id="filtro_tipo_contrato" name="tipo_contrato">
+                        <option value="">Todos</option>
+                        <option value="termino_indefinido">Término indefinido</option>
+                        <option value="termino_fijo">Término fijo</option>
+                        <option value="obra_labor">Obra o labor</option>
+                        <option value="aprendizaje">Aprendizaje SENA</option>
+                    </select>
+
+                    <label for="filtro_cargo">Cargo:</label>
+                    <input type="text" id="filtro_cargo" name="cargo"
+                           placeholder="Ej: Auxiliar, Coordinador...">
+
+                    <button type="submit">Buscar</button>
+                    <button type="reset">Limpiar filtros</button>
+                </fieldset>
+            </form>
+
+            <!-- TABLA DE RESULTADOS -->
+            <!--
+                AUTOMATIZACIÓN — ALERTAS VISUALES EN LA TABLA:
+                  - Fila en AMARILLO: contrato vence en ≤ 30 días
+                  - Fila en NARANJA: algún documento del empleado está próximo a vencer
+                  - Fila en ROJO: empleado tiene novedades sin procesar en nómina
+                  - Indicador VERDE/ROJO en columna Estado
+                  - Columna "Último pago": si está en blanco o > 35 días → alerta
+            -->
+            <table id="tabla_empleados">
+                <caption>
+                    Listado de empleados activos
+                    <small>— Haga clic en una fila para ver el detalle completo</small>
+                </caption>
+                <thead>
+                    <tr>
+                        <!--
+                            AUTOMATIZACIÓN: Clic en encabezado de columna
+                            ordena la tabla ascendente/descendente (sort por BD).
+                        -->
+                        <th scope="col">
+                            <input type="checkbox" id="sel_todos"
+                                   aria-label="Seleccionar todos los empleados">
+                        </th>
+                        <th scope="col">Cédula</th>
+                        <th scope="col">Nombre completo</th>
+                        <th scope="col">Cargo</th>
+                        <th scope="col">Área</th>
+                        <th scope="col">Tipo contrato</th>
+                        <th scope="col">Fecha ingreso</th>
+                        <th scope="col">Salario ($)</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Último pago</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- FILA EJEMPLO — en producción se genera dinámicamente desde BD -->
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="sel_emp" value="1"
+                                   aria-label="Seleccionar Juan Pérez">
+                        </td>
+                        <td><data value="12345678">12.345.678</data></td>
+                        <td>
+                            <a href="empleados.php?id=1&modo=ver"
+                               aria-label="Ver detalle de Juan Pérez">
+                                Pérez García, Juan Carlos
+                            </a>
+                        </td>
+                        <td>Operario</td>
+                        <td>Operaciones</td>
+                        <td>Término indefinido</td>
+                        <td><time datetime="2022-03-15">15/03/2022</time></td>
+                        <td><data value="1423500">$1.423.500</data></td>
+                        <td>
+                            <output name="estado_emp_1" aria-label="Estado del empleado">
+                                Activo
+                            </output>
+                        </td>
+                        <td><time datetime="2026-04-30">30/04/2026</time></td>
+                        <td>
+                            <a href="empleados.php?id=1&modo=editar">Editar</a>
+                            |
+                            <a href="nomina.php?id_empleado=1">Liquidar</a>
+                            |
+                            <a href="empleados.php?id=1&accion=ver_historial">
+                                Historial
+                            </a>
+                        </td>
+                    </tr>
+                    <!-- FIN FILA EJEMPLO -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7">
+                            <small>
+                                Total empleados activos:
+                                <output name="total_activos">1</output>
+                                |
+                                En vacaciones:
+                                <output name="total_vacaciones">0</output>
+                                |
+                                En incapacidad:
+                                <output name="total_incapacidad">0</output>
+                            </small>
+                        </td>
+                        <td colspan="4">
+                            <small>
+                                Nómina mensual estimada:
+                                <output name="total_nomina_estimada">$0</output>
+                            </small>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- ACCIONES EN LOTE (para empresa grande) -->
+            <fieldset id="acciones_lote" aria-describedby="ayuda_lote">
+                <legend>Acciones en lote (seleccionados)</legend>
+                <small id="ayuda_lote">
+                    Seleccione empleados con las casillas para aplicar acciones masivas.
+                    Útil para empresas con muchos trabajadores.
+                </small>
+                <button type="button" id="btn_liquidar_lote">
+                    Liquidar nómina en lote
+                </button>
+                <button type="button" id="btn_exportar_seleccionados">
+                    Exportar seleccionados
+                </button>
+                <button type="button" id="btn_cambiar_area_lote">
+                    Cambiar área (lote)
+                </button>
+            </fieldset>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECCIÓN 2: FORMULARIO DE DATOS PERSONALES DEL EMPLEADO
+             AUTOMATIZACIONES:
+               - modo=crear → todos los campos vacíos
+               - modo=editar → campos pre-llenados desde BD con id_empleado
+               - Validación cédula: verificar que no exista duplicada en BD
+               - Al guardar → crear automáticamente el registro en tabla
+                 empleados_historial_cambios (quién cambió qué y cuándo)
+               - Generar código_empleado automático según consecutivo + área
+               - Si empresa > 100 empleados → sugerir código por centro de costos
+        ═══════════════════════════════════════════════════════════════ -->
+        <section id="sec_nuevo_empleado" aria-labelledby="titulo_nuevo_empleado">
+            <h2 id="titulo_nuevo_empleado">Datos personales del empleado</h2>
+
+            <form id="form_empleado" action="guardar_empleado.php" method="post"
+                  enctype="multipart/form-data" novalidate>
+
+                <input type="hidden" name="id_empleado" value="">
+                <input type="hidden" name="modo" value="crear">
+                <!--
+                    Campo oculto modo:
+                      "crear" → INSERT en BD
+                      "editar" → UPDATE en BD (requiere id_empleado)
+                -->
+
+                <!-- ─── ARTÍCULO: IDENTIFICACIÓN ─── -->
+                <article id="art_identificacion" aria-labelledby="tit_identificacion">
+                    <h3 id="tit_identificacion">1. Identificación</h3>
+
+                    <fieldset>
+                        <legend>Datos de identidad</legend>
+
+                        <label for="codigo_empleado">Código interno:</label>
+                        <input type="text" id="codigo_empleado" name="codigo_empleado"
+                               readonly placeholder="Se genera automáticamente"
+                               aria-describedby="ayuda_codigo">
+                        <small id="ayuda_codigo">
+                            El sistema genera el código al guardar.
+                            Formato: ÁREA-CONSECUTIVO (ej: OPE-0042).
+                        </small>
+
+                        <label for="tipo_documento">
+                            Tipo de documento: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_documento" name="tipo_documento" required>
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="CC">Cédula de ciudadanía (CC)</option>
+                            <option value="CE">Cédula de extranjería (CE)</option>
+                            <option value="TI">Tarjeta de identidad (TI)</option>
+                            <option value="PA">Pasaporte (PA)</option>
+                            <option value="PEP">Permiso especial de permanencia (PEP)</option>
+                            <option value="PPT">Permiso por protección temporal (PPT)</option>
+                            <option value="NIT">NIT (para contratistas)</option>
+                        </select>
+
+                        <label for="numero_documento">
+                            Número de documento: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="numero_documento" name="numero_documento"
+                               required pattern="[0-9]{5,15}"
+                               placeholder="Sin puntos ni guiones"
+                               aria-describedby="ayuda_cedula">
+                        <small id="ayuda_cedula">
+                            Solo números. El sistema valida que no exista duplicado en la BD.
+                        </small>
+
+                        <label for="lugar_expedicion">Lugar de expedición:</label>
+                        <input type="text" id="lugar_expedicion" name="lugar_expedicion"
+                               placeholder="Municipio de expedición del documento">
+
+                        <label for="fecha_expedicion">Fecha de expedición:</label>
+                        <input type="date" id="fecha_expedicion" name="fecha_expedicion">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Nombre completo</legend>
+
+                        <!--
+                            NOTA DE DISEÑO DE BD:
+                            Siempre guardar nombre en campos separados.
+                            NUNCA en un solo campo "nombre_completo".
+                            Esto permite: ordenar por apellido, buscar por
+                            primer nombre, generar formato "Apellido, Nombre"
+                            para nómina, y hacer reportes correctos a la DIAN.
+                        -->
+                        <label for="primer_apellido">
+                            Primer apellido: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="primer_apellido" name="primer_apellido"
+                               required autocomplete="family-name"
+                               placeholder="Pérez">
+
+                        <label for="segundo_apellido">Segundo apellido:</label>
+                        <input type="text" id="segundo_apellido" name="segundo_apellido"
+                               autocomplete="additional-name"
+                               placeholder="García">
+
+                        <label for="primer_nombre">
+                            Primer nombre: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="primer_nombre" name="primer_nombre"
+                               required autocomplete="given-name"
+                               placeholder="Juan">
+
+                        <label for="segundo_nombre">Segundo nombre:</label>
+                        <input type="text" id="segundo_nombre" name="segundo_nombre"
+                               placeholder="Carlos">
+
+                        <label for="nombre_completo_display">
+                            Nombre completo (vista previa):
+                        </label>
+                        <output id="nombre_completo_display"
+                                for="primer_apellido segundo_apellido primer_nombre segundo_nombre"
+                                aria-live="polite">
+                            Se genera automáticamente
+                        </output>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Datos biográficos</legend>
+
+                        <label for="fecha_nacimiento">
+                            Fecha de nacimiento: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento"
+                               required aria-describedby="ayuda_edad">
+                        <small id="ayuda_edad">
+                            El sistema calcula la edad automáticamente y alerta si el
+                            empleado es menor de 18 años (requiere proceso especial).
+                            También alerta al llegar a edad de pensión
+                            (62 hombres / 57 mujeres — Ley 100/93).
+                        </small>
+
+                        <label for="genero">Género:</label>
+                        <select id="genero" name="genero">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                            <option value="NB">No binario</option>
+                            <option value="NI">Prefiero no indicar</option>
+                        </select>
+
+                        <label for="estado_civil">Estado civil:</label>
+                        <select id="estado_civil" name="estado_civil">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="soltero">Soltero/a</option>
+                            <option value="casado">Casado/a</option>
+                            <option value="union_libre">Unión libre</option>
+                            <option value="divorciado">Divorciado/a</option>
+                            <option value="viudo">Viudo/a</option>
+                        </select>
+
+                        <!--
+                            AUTOMATIZACIÓN — PERSONAS A CARGO:
+                            Este campo impacta directamente la retención en la fuente.
+                            El empleado puede declarar hasta 2 personas dependientes
+                            para la deducción del 10% del ingreso (Art. 387 E.T.).
+                            El sistema debe solicitar documentos soporte al activarlo.
+                        -->
+                        <label for="personas_cargo">
+                            Personas a cargo (dependientes):
+                        </label>
+                        <input type="number" id="personas_cargo" name="personas_cargo"
+                               value="0" min="0" max="2"
+                               aria-describedby="ayuda_dependientes">
+                        <small id="ayuda_dependientes">
+                            <strong>Impacta la retención en la fuente.</strong>
+                            Máximo 2 personas reconocidas por la DIAN (Art. 387 E.T.).
+                            Requiere: acta matrimonio / registro civil / sentencia custodia.
+                            El sistema aplicará la deducción del 10% del ingreso en la
+                            base gravable de retención.
+                        </small>
+
+                        <label for="grupo_sanguineo">Grupo sanguíneo / RH:</label>
+                        <select id="grupo_sanguineo" name="grupo_sanguineo">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+
+                        <label for="nivel_escolaridad">Nivel de escolaridad:</label>
+                        <select id="nivel_escolaridad" name="nivel_escolaridad">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="primaria">Primaria</option>
+                            <option value="secundaria">Secundaria / Bachillerato</option>
+                            <option value="tecnico">Técnico</option>
+                            <option value="tecnologo">Tecnólogo</option>
+                            <option value="universitario">Universitario</option>
+                            <option value="especializacion">Especialización</option>
+                            <option value="maestria">Maestría</option>
+                            <option value="doctorado">Doctorado</option>
+                        </select>
+
+                        <label for="profesion_titulo">Profesión / Título:</label>
+                        <input type="text" id="profesion_titulo" name="profesion_titulo"
+                               placeholder="Ej: Ingeniero industrial, Contador público">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: CONTACTO Y RESIDENCIA ─── -->
+                <article id="art_contacto" aria-labelledby="tit_contacto">
+                    <h3 id="tit_contacto">2. Contacto y residencia</h3>
+
+                    <fieldset>
+                        <legend>Dirección de residencia</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — GEOREFERENCIACIÓN:
+                            Si se usa API de Geocercas o DIVIPOLA (DANE),
+                            al seleccionar municipio → auto-completar departamento
+                            y código postal. Útil para reportes de exógena DIAN.
+                        -->
+                        <label for="departamento_residencia">Departamento:</label>
+                        <select id="departamento_residencia" name="departamento_residencia">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="ANT">Antioquia</option>
+                            <option value="ATL">Atlántico</option>
+                            <option value="BOL">Bolívar</option>
+                            <option value="BOY">Boyacá</option>
+                            <option value="CAL">Caldas</option>
+                            <option value="CAQ">Caquetá</option>
+                            <option value="CAS">Casanare</option>
+                            <option value="CAU">Cauca</option>
+                            <option value="CES">Cesar</option>
+                            <option value="CHO">Chocó</option>
+                            <option value="COR">Córdoba</option>
+                            <option value="CUN">Cundinamarca</option>
+                            <option value="GUA">Guajira</option>
+                            <option value="HUI">Huila</option>
+                            <option value="MAG">Magdalena</option>
+                            <option value="MET">Meta</option>
+                            <option value="NAR">Nariño</option>
+                            <option value="NOR">Norte de Santander</option>
+                            <option value="PUT">Putumayo</option>
+                            <option value="QUI">Quindío</option>
+                            <option value="RIS">Risaralda</option>
+                            <option value="SAN">Santander</option>
+                            <option value="SUC">Sucre</option>
+                            <option value="TOL">Tolima</option>
+                            <option value="VAC">Valle del Cauca</option>
+                            <option value="DC">Bogotá D.C.</option>
+                        </select>
+
+                        <label for="municipio_residencia">Municipio:</label>
+                        <input type="text" id="municipio_residencia"
+                               name="municipio_residencia"
+                               placeholder="Ej: Medellín, Mosquera, Cali">
+
+                        <label for="barrio_residencia">Barrio / Vereda:</label>
+                        <input type="text" id="barrio_residencia" name="barrio_residencia"
+                               placeholder="Ej: El Poblado, La Floresta">
+
+                        <label for="direccion_residencia">
+                            Dirección: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="direccion_residencia"
+                               name="direccion_residencia" required
+                               placeholder="Ej: Cra 45 # 23-10 Apto 301">
+
+                        <label for="codigo_postal">Código postal:</label>
+                        <input type="text" id="codigo_postal" name="codigo_postal"
+                               pattern="[0-9]{6}"
+                               placeholder="6 dígitos">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Medios de contacto</legend>
+
+                        <label for="telefono_celular">
+                            Celular: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="tel" id="telefono_celular" name="telefono_celular"
+                               required pattern="[3][0-9]{9}"
+                               placeholder="3001234567"
+                               autocomplete="tel">
+
+                        <label for="telefono_fijo">Teléfono fijo:</label>
+                        <input type="tel" id="telefono_fijo" name="telefono_fijo"
+                               placeholder="Ej: 6011234567">
+
+                        <label for="correo_personal">Correo electrónico personal:</label>
+                        <input type="email" id="correo_personal" name="correo_personal"
+                               autocomplete="email"
+                               placeholder="empleado@correo.com"
+                               aria-describedby="ayuda_correo">
+                        <small id="ayuda_correo">
+                            A este correo se enviará el desprendible de nómina mensual.
+                        </small>
+
+                        <label for="correo_corporativo">Correo corporativo:</label>
+                        <input type="email" id="correo_corporativo"
+                               name="correo_corporativo"
+                               placeholder="nombre@mycompany.com">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Contacto de emergencia</legend>
+
+                        <label for="contacto_emergencia_nombre">Nombre:</label>
+                        <input type="text" id="contacto_emergencia_nombre"
+                               name="contacto_emergencia_nombre"
+                               placeholder="Nombre completo">
+
+                        <label for="contacto_emergencia_parentesco">Parentesco:</label>
+                        <select id="contacto_emergencia_parentesco"
+                                name="contacto_emergencia_parentesco">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="conyuge">Cónyuge / Compañero/a</option>
+                            <option value="padre">Padre / Madre</option>
+                            <option value="hijo">Hijo/a</option>
+                            <option value="hermano">Hermano/a</option>
+                            <option value="otro">Otro</option>
+                        </select>
+
+                        <label for="contacto_emergencia_telefono">Teléfono:</label>
+                        <input type="tel" id="contacto_emergencia_telefono"
+                               name="contacto_emergencia_telefono"
+                               pattern="[0-9]{7,10}"
+                               placeholder="Celular o fijo">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: INFORMACIÓN LABORAL Y CARGO ─── -->
+                <article id="art_laboral" aria-labelledby="tit_laboral">
+                    <h3 id="tit_laboral">3. Información laboral</h3>
+
+                    <fieldset>
+                        <legend>Cargo y área</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — CARGOS DESDE CATÁLOGO:
+                            Debe existir una tabla maestra "cargos" en BD con:
+                              id_cargo, nombre_cargo, nivel_cargo, salario_minimo_cargo,
+                              salario_maximo_cargo, nivel_riesgo_arl, requiere_uniforme,
+                              descripcion_funciones.
+                            Al seleccionar cargo → se sugiere el rango salarial
+                            y el nivel de ARL correspondiente.
+                        -->
+                        <label for="id_cargo">
+                            Cargo: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="id_cargo" name="id_cargo" required
+                                aria-describedby="ayuda_cargo">
+                            <option value="" disabled selected>
+                                — Seleccione el cargo —
+                            </option>
+                            <optgroup label="Directivos">
+                                <option value="10">Gerente General</option>
+                                <option value="11">Director de área</option>
+                                <option value="12">Jefe de departamento</option>
+                            </optgroup>
+                            <optgroup label="Profesionales">
+                                <option value="20">Contador/a</option>
+                                <option value="21">Abogado/a</option>
+                                <option value="22">Ingeniero/a</option>
+                                <option value="23">Administrador/a</option>
+                            </optgroup>
+                            <optgroup label="Técnicos / Tecnólogos">
+                                <option value="30">Técnico/a especializado</option>
+                                <option value="31">Auxiliar contable</option>
+                                <option value="32">Auxiliar administrativo</option>
+                            </optgroup>
+                            <optgroup label="Operativos">
+                                <option value="40">Operario/a</option>
+                                <option value="41">Conductor</option>
+                                <option value="42">Almacenista</option>
+                                <option value="43">Mensajero</option>
+                            </optgroup>
+                            <optgroup label="Servicios generales">
+                                <option value="50">Aseo y mantenimiento</option>
+                                <option value="51">Vigilante / Celador</option>
+                                <option value="52">Portero</option>
+                            </optgroup>
+                        </select>
+                        <small id="ayuda_cargo">
+                            Al seleccionar se sugiere el nivel de ARL y rango salarial.
+                        </small>
+
+                        <label for="id_area">
+                            Área / Departamento: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="id_area" name="id_area" required>
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="ADM">Administración</option>
+                            <option value="OPE">Operaciones / Producción</option>
+                            <option value="VEN">Ventas</option>
+                            <option value="LOG">Logística</option>
+                            <option value="TEC">Tecnología</option>
+                            <option value="FIN">Financiero / Contabilidad</option>
+                            <option value="RH">Recursos Humanos</option>
+                            <option value="SEG">Seguridad</option>
+                        </select>
+
+                        <!--
+                            AUTOMATIZACIÓN — CENTROS DE COSTO:
+                            CRÍTICO para empresa grande (2500 empleados).
+                            Cada empleado debe tener asignado un centro de costo.
+                            Al generar nómina, el costo se imputa al CC correspondiente.
+                            Para empresa pequeña (≤30) puede ser opcional.
+                            Tabla maestra: centros_costo (id, nombre, área, presupuesto_mensual)
+                        -->
+                        <label for="id_centro_costo">Centro de costo:</label>
+                        <select id="id_centro_costo" name="id_centro_costo"
+                                aria-describedby="ayuda_cc">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="CC01">CC01 — Gerencia</option>
+                            <option value="CC02">CC02 — Planta norte</option>
+                            <option value="CC03">CC03 — Planta sur</option>
+                            <option value="CC04">CC04 — Bodega</option>
+                            <option value="CC05">CC05 — Ventas zona 1</option>
+                            <option value="CC06">CC06 — Ventas zona 2</option>
+                        </select>
+                        <small id="ayuda_cc">
+                            <strong>Importante para empresa grande:</strong>
+                            El costo de nómina se imputa al centro de costo asignado.
+                            Permite hacer presupuesto por área.
+                        </small>
+
+                        <label for="sede">Sede / Sucursal:</label>
+                        <select id="sede" name="sede">
+                            <option value="principal" selected>Sede principal</option>
+                            <option value="norte">Sucursal norte</option>
+                            <option value="sur">Sucursal sur</option>
+                            <option value="remoto">Trabajo remoto</option>
+                        </select>
+
+                        <label for="jornada_laboral">Jornada laboral:</label>
+                        <select id="jornada_laboral" name="jornada_laboral"
+                                aria-describedby="ayuda_jornada">
+                            <option value="completa_diurna">
+                                Completa diurna (48h/sem — transición a 46h)
+                            </option>
+                            <option value="completa_nocturna">
+                                Completa nocturna
+                            </option>
+                            <option value="medio_tiempo">
+                                Medio tiempo (máx. 24h/sem)
+                            </option>
+                            <option value="turnos_rotativos">
+                                Turnos rotativos
+                            </option>
+                            <option value="flexible">
+                                Flexible / Teletrabajo
+                            </option>
+                        </select>
+                        <small id="ayuda_jornada">
+                            La jornada máxima legal está reduciéndose progresivamente:
+                            48h (hasta 2023) → 47h (2024) → 46h (2025) → 44h (2026).
+                            Ley 2101/2021.
+                        </small>
+
+                        <label for="turno_asignado">Turno asignado:</label>
+                        <select id="turno_asignado" name="turno_asignado">
+                            <option value="NA" selected>No aplica</option>
+                            <option value="manana">Mañana (6am–2pm)</option>
+                            <option value="tarde">Tarde (2pm–10pm)</option>
+                            <option value="noche">Noche (10pm–6am)</option>
+                            <option value="rotativo">Rotativo (varía)</option>
+                        </select>
+
+                        <label for="nombre_jefe_inmediato">Jefe inmediato:</label>
+                        <select id="nombre_jefe_inmediato" name="id_jefe_inmediato">
+                            <!--
+                                AUTOMATIZACIÓN: Se carga con empleados activos
+                                que tengan nivel de cargo = directivo o jefe.
+                                Permite construir el organigrama automáticamente.
+                            -->
+                            <option value="" disabled selected>
+                                — Seleccione el jefe directo —
+                            </option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: CONTRATO LABORAL ─── -->
+                <article id="sec_contrato" aria-labelledby="tit_contrato">
+                    <h3 id="tit_contrato">4. Contrato laboral</h3>
+
+                    <fieldset>
+                        <legend>Datos del contrato</legend>
+
+                        <!--
+                            REGLAS LEGALES POR TIPO DE CONTRATO:
+
+                            TÉRMINO INDEFINIDO (Art. 47 CST):
+                              - No tiene fecha de fin.
+                              - Período de prueba: máx. 2 meses (Art. 78 CST).
+                              - Para terminarlo: preaviso o indemnización.
+                              - Indemnización: 30 días por primer año + 20 días
+                                por cada año adicional (Art. 64 CST).
+
+                            TÉRMINO FIJO (Art. 46 CST):
+                              - Mínimo 1 día, máximo 3 años.
+                              - Se puede renovar hasta 3 veces;
+                                a la 4ta renovación se vuelve indefinido.
+                              - Preaviso de NO renovación: 30 días antes.
+                              - Sin período de prueba en renovaciones.
+                              AUTOMATIZACIÓN: Alertar 60 días antes del vencimiento.
+
+                            OBRA O LABOR (Art. 45 CST):
+                              - Termina al finalizar la obra/labor.
+                              - No tiene fecha fija, pero sí debe describir el objeto.
+                              - Mismos derechos prestacionales que indefinido.
+
+                            APRENDIZAJE SENA (Ley 789/2002):
+                              - Etapa lectiva: empresa paga 50% SMLMV.
+                              - Etapa productiva: empresa paga 75% SMLMV.
+                              - NO genera prestaciones sociales.
+                              - La empresa está obligada según número de empleados:
+                                1 aprendiz por cada 20 trabajadores (Art. 32 L.789).
+                        -->
+                        <label for="tipo_contrato">
+                            Tipo de contrato: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_contrato" name="tipo_contrato" required
+                                aria-describedby="ayuda_tipo_contrato">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="termino_indefinido">
+                                Término indefinido (Art. 47 CST)
+                            </option>
+                            <option value="termino_fijo">
+                                Término fijo (Art. 46 CST — máx. 3 años)
+                            </option>
+                            <option value="obra_labor">
+                                Obra o labor (Art. 45 CST)
+                            </option>
+                            <option value="aprendizaje_lectiva">
+                                Aprendizaje SENA — Etapa lectiva (50% SMLMV)
+                            </option>
+                            <option value="aprendizaje_productiva">
+                                Aprendizaje SENA — Etapa productiva (75% SMLMV)
+                            </option>
+                        </select>
+                        <small id="ayuda_tipo_contrato">
+                            El tipo de contrato determina: si hay período de prueba,
+                            cómo se calcula la indemnización, y si aplican
+                            todas las prestaciones sociales.
+                        </small>
+
+                        <label for="fecha_ingreso">
+                            Fecha de ingreso: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_ingreso" name="fecha_ingreso"
+                               required aria-describedby="ayuda_fecha_ingreso">
+                        <small id="ayuda_fecha_ingreso">
+                            Desde esta fecha se cuentan: antigüedad, período de prueba,
+                            vacaciones, cesantías, prima y todos los derechos laborales.
+                        </small>
+
+                        <!--
+                            AUTOMATIZACIÓN — PERÍODO DE PRUEBA:
+                            Al ingresar fecha_ingreso, calcular automáticamente:
+                              fecha_fin_prueba = fecha_ingreso + 60 días (máx. legal).
+                            Mostrar aviso en nómina si empleado aún está en período de prueba.
+                            En período de prueba:
+                              - Se puede terminar el contrato sin indemnización.
+                              - Pero SÍ se generan todas las prestaciones sociales.
+                        -->
+                        <label for="periodo_prueba_dias">
+                            Período de prueba (días):
+                        </label>
+                        <input type="number" id="periodo_prueba_dias"
+                               name="periodo_prueba_dias"
+                               value="60" min="0" max="60"
+                               aria-describedby="ayuda_prueba">
+                        <small id="ayuda_prueba">
+                            Máximo legal: 60 días (Art. 78 CST).
+                            Poner 0 si no hay período de prueba.
+                            En renovaciones de contrato fijo NO aplica nuevo período.
+                        </small>
+
+                        <label for="fecha_fin_prueba">Fecha fin período de prueba:</label>
+                        <input type="date" id="fecha_fin_prueba"
+                               name="fecha_fin_prueba" readonly
+                               aria-label="Se calcula automáticamente">
+
+                        <!-- CAMPO CONDICIONAL: solo visible si tipo = término fijo u obra -->
+                        <label for="fecha_fin_contrato">
+                            Fecha fin de contrato:
+                            <small>(Solo término fijo / obra-labor)</small>
+                        </label>
+                        <input type="date" id="fecha_fin_contrato"
+                               name="fecha_fin_contrato"
+                               aria-describedby="ayuda_fin_contrato">
+                        <small id="ayuda_fin_contrato">
+                            Dejar vacío para contrato a término indefinido.
+                            AUTOMATIZACIÓN: Alertar 60 días antes del vencimiento.
+                            Si se renueva por 4ta vez → se convierte en indefinido.
+                        </small>
+
+                        <label for="objeto_contrato">
+                            Objeto del contrato / Descripción funciones:
+                        </label>
+                        <textarea id="objeto_contrato" name="objeto_contrato"
+                                  rows="3" maxlength="1000"
+                                  placeholder="Describe las funciones y responsabilidades del cargo. Requerido para contratos de obra o labor.">
+                        </textarea>
+
+                        <label for="lugar_trabajo">Lugar de trabajo:</label>
+                        <input type="text" id="lugar_trabajo" name="lugar_trabajo"
+                               placeholder="Municipio y dirección donde prestará servicios">
+
+                        <!--
+                            AUTOMATIZACIÓN — NÚMERO DE RENOVACIONES:
+                            El sistema debe contar cuántas veces se ha renovado
+                            el contrato a término fijo. Al llegar a 3 renovaciones,
+                            alertar que la próxima renovación debe ser a término indefinido.
+                        -->
+                        <label for="numero_renovaciones">Número de renovaciones:</label>
+                        <output id="numero_renovaciones" name="numero_renovaciones"
+                                aria-label="Número de renovaciones del contrato">
+                            0
+                        </output>
+                        <small>
+                            Al llegar a 3 renovaciones el contrato se
+                            convierte en término indefinido (Art. 46 CST).
+                        </small>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Modalidad salarial</legend>
+
+                        <label for="tipo_salario">
+                            Modalidad de salario: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_salario" name="tipo_salario" required>
+                            <option value="ordinario" selected>Ordinario</option>
+                            <option value="integral">
+                                Integral (≥ 13 SMLMV — mín. $18.505.500 en 2026)
+                            </option>
+                        </select>
+
+                        <label for="salario_basico">
+                            Salario mensual pactado ($):
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="number" id="salario_basico" name="salario_basico"
+                               required min="1423500" step="1"
+                               placeholder="Mínimo $1.423.500"
+                               aria-describedby="ayuda_salario_contrato">
+                        <small id="ayuda_salario_contrato">
+                            No puede ser inferior al SMLMV 2026: $1.423.500.
+                            Para salario integral: mínimo $18.505.500 (13 × SMLMV).
+                            Este valor se copia automáticamente al formulario de nómina.
+                        </small>
+
+                        <label for="forma_pago">Frecuencia de pago:</label>
+                        <select id="forma_pago" name="forma_pago">
+                            <option value="quincenal" selected>
+                                Quincenal (días 15 y último de mes)
+                            </option>
+                            <option value="mensual">
+                                Mensual (último día del mes)
+                            </option>
+                        </select>
+
+                        <!--
+                            AUTOMATIZACIÓN — HISTORIAL SALARIAL:
+                            Cada vez que se modifique el salario, el sistema NO debe
+                            sobreescribir el valor anterior. Debe insertar un registro
+                            nuevo en la tabla historial_salarial con:
+                              id_empleado, salario_anterior, salario_nuevo,
+                              fecha_cambio, motivo_cambio, usuario_que_cambio.
+                            Esto es OBLIGATORIO para calcular correctamente las
+                            cesantías y la liquidación definitiva.
+                        -->
+                        <label for="motivo_cambio_salario">
+                            Motivo del cambio salarial:
+                            <small>(Si es modificación)</small>
+                        </label>
+                        <select id="motivo_cambio_salario" name="motivo_cambio_salario">
+                            <option value="inicial" selected>
+                                Salario inicial de ingreso
+                            </option>
+                            <option value="aumento_anual">
+                                Aumento anual (IPC / negociación)
+                            </option>
+                            <option value="ascenso">Ascenso de cargo</option>
+                            <option value="promocion">Promoción interna</option>
+                            <option value="negociacion">Negociación individual</option>
+                            <option value="correccion">Corrección de error</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: SEGURIDAD SOCIAL ─── -->
+                <article id="sec_seguridad_social" aria-labelledby="tit_seg_social">
+                    <h3 id="tit_seg_social">5. Seguridad social y parafiscales</h3>
+
+                    <fieldset>
+                        <legend>Salud — EPS</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — VALIDACIÓN EPS:
+                            El empleado DEBE estar afiliado a una EPS.
+                            Si no se registra EPS → el sistema no debe permitir
+                            generar nómina (es obligación legal del empleador).
+                            Plazo de afiliación: antes del primer día de trabajo.
+                            Si cambia de EPS → registrar fecha de traslado.
+                        -->
+                        <label for="eps_nombre">
+                            EPS: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="eps_nombre" name="id_eps" required>
+                            <option value="" disabled selected>— Seleccione la EPS —</option>
+                            <option value="1">Sura EPS</option>
+                            <option value="2">Sanitas</option>
+                            <option value="3">Compensar</option>
+                            <option value="4">Nueva EPS</option>
+                            <option value="5">Famisanar</option>
+                            <option value="6">Coosalud</option>
+                            <option value="7">Salud Total</option>
+                            <option value="8">Medimás</option>
+                            <option value="9">Aliansalud</option>
+                            <option value="10">Capital Salud</option>
+                        </select>
+
+                        <label for="fecha_afiliacion_eps">
+                            Fecha de afiliación EPS:
+                        </label>
+                        <input type="date" id="fecha_afiliacion_eps"
+                               name="fecha_afiliacion_eps">
+
+                        <label for="numero_afiliacion_eps">
+                            Número de afiliación EPS:
+                        </label>
+                        <input type="text" id="numero_afiliacion_eps"
+                               name="numero_afiliacion_eps"
+                               placeholder="Número del carné o afiliación">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Pensión — Fondo</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — RÉGIMEN PENSIONAL:
+                            RPM (Colpensiones): aportes van al fondo común del Estado.
+                            RAIS (fondos privados): aportes van a cuenta individual.
+                            IMPORTANTE: No se puede cambiar de régimen después de
+                            10 años cotizando en el mismo.
+                            Si el empleado tiene más de 52 años (hombre) o 47 (mujer)
+                            y está en RAIS → NO puede trasladarse a Colpensiones
+                            (Ley 797/2003, Art. 13).
+                            AUTOMATIZACIÓN: Verificar restricción de traslado.
+                        -->
+                        <label for="fondo_pension">
+                            Fondo de pensiones: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="fondo_pension" name="id_fondo_pension" required>
+                            <option value="" disabled selected>
+                                — Seleccione el fondo —
+                            </option>
+                            <optgroup label="Régimen de Prima Media (RPM)">
+                                <option value="1">Colpensiones</option>
+                            </optgroup>
+                            <optgroup label="Régimen de Ahorro Individual (RAIS)">
+                                <option value="2">Porvenir</option>
+                                <option value="3">Protección</option>
+                                <option value="4">Colfondos</option>
+                                <option value="5">Old Mutual</option>
+                            </optgroup>
+                        </select>
+
+                        <label for="regimen_pensional">Régimen:</label>
+                        <output id="regimen_pensional" name="regimen_pensional">
+                            Se determina según fondo seleccionado
+                        </output>
+
+                        <label for="fecha_afiliacion_pension">
+                            Fecha de afiliación al fondo:
+                        </label>
+                        <input type="date" id="fecha_afiliacion_pension"
+                               name="fecha_afiliacion_pension">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>ARL — Riesgo laboral</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — NIVEL ARL:
+                            El nivel de riesgo ARL lo determina el CARGO, no el empleado.
+                            Al seleccionar cargo → se sugiere el nivel correspondiente.
+                            Si el empleado realiza múltiples funciones → se usa el nivel
+                            del riesgo MÁS ALTO (principio de precaución).
+                            La empresa escoge la ARL (no el empleado).
+                        -->
+                        <label for="nivel_riesgo_arl">
+                            Nivel de riesgo ARL: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="nivel_riesgo_arl" name="nivel_riesgo_arl" required>
+                            <option value="1">
+                                Nivel I — 0.522% (oficina, actividad mínima)
+                            </option>
+                            <option value="2">
+                                Nivel II — 1.044% (laboratorio, mantenimiento ligero)
+                            </option>
+                            <option value="3" selected>
+                                Nivel III — 2.436% (industrial, mecánico)
+                            </option>
+                            <option value="4">
+                                Nivel IV — 4.350% (construcción, conducción)
+                            </option>
+                            <option value="5">
+                                Nivel V — 6.960% (minería, explosivos, buceo)
+                            </option>
+                        </select>
+
+                        <label for="arl_empresa">ARL de la empresa:</label>
+                        <select id="arl_empresa" name="arl_empresa">
+                            <option value="SURA">SURA ARL</option>
+                            <option value="POSITIVA">Positiva ARL</option>
+                            <option value="COLMENA">Colmena Seguros</option>
+                            <option value="LIBERTY">Liberty Seguros</option>
+                            <option value="AXIMÉDICA">Aximédica</option>
+                            <option value="BOLÍVAR">Seguros Bolívar</option>
+                        </select>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Caja de compensación familiar</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN:
+                            La caja de compensación NO la escoge el empleado.
+                            La escoge la EMPRESA. El empleado se afilia
+                            automáticamente a la caja de la empresa.
+                            Los beneficios (educación, recreación, subsidio familiar)
+                            dependen del número de hijos a cargo del empleado.
+                        -->
+                        <label for="caja_compensacion">
+                            Caja de compensación: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="caja_compensacion" name="id_caja_compensacion"
+                                required>
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="1">Cafam</option>
+                            <option value="2">Compensar</option>
+                            <option value="3">Colsubsidio</option>
+                            <option value="4">Comfenalco</option>
+                            <option value="5">Comfama</option>
+                            <option value="6">Comfacor</option>
+                            <option value="7">Comfamiliar</option>
+                        </select>
+
+                        <label for="hijos_beneficiarios">
+                            Número de hijos (beneficiarios subsidio familiar):
+                        </label>
+                        <input type="number" id="hijos_beneficiarios"
+                               name="hijos_beneficiarios"
+                               value="0" min="0" max="20"
+                               aria-describedby="ayuda_hijos">
+                        <small id="ayuda_hijos">
+                            Los hijos menores de 18 años dan derecho al subsidio familiar
+                            (Ley 21/1982). Con hijos en universidad: hasta 23 años.
+                        </small>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Tipo de cotizante y condiciones especiales</legend>
+
+                        <label for="tipo_cotizante">
+                            Tipo de cotizante PILA: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_cotizante" name="tipo_cotizante" required
+                                aria-describedby="ayuda_cotizante">
+                            <option value="1" selected>
+                                1 — Empleado dependiente (regular)
+                            </option>
+                            <option value="2">
+                                2 — Pensionado trabajando (no cotiza pensión)
+                            </option>
+                            <option value="12">
+                                12 — Aprendiz SENA — Etapa productiva
+                            </option>
+                            <option value="19">
+                                19 — Menor 28 años primer empleo (Ley 2040/2020)
+                            </option>
+                            <option value="23">
+                                23 — Trabajador de tiempo parcial
+                            </option>
+                        </select>
+                        <small id="ayuda_cotizante">
+                            Este código va en la PILA (planilla integrada).
+                            Determina qué aportes se pagan y a quién.
+                        </small>
+
+                        <label for="exento_parafiscales">
+                            ¿Exento de SENA / ICBF / Caja?
+                        </label>
+                        <select id="exento_parafiscales" name="exento_parafiscales"
+                                aria-describedby="ayuda_exencion">
+                            <option value="no" selected>No (aplica normativa general)</option>
+                            <option value="si_ley1607">
+                                Sí — Ley 1607/2012 (salario ≤ 10 SMLMV)
+                            </option>
+                            <option value="si_aprendiz">
+                                Sí — Aprendiz SENA (no paga parafiscales)
+                            </option>
+                        </select>
+                        <small id="ayuda_exencion">
+                            Ley 1607/2012: empleados con salario ≤ 10 SMLMV
+                            ($14.235.000 en 2026) están exentos de SENA, ICBF
+                            y parcialmente de caja de compensación.
+                        </small>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: DATOS BANCARIOS ─── -->
+                <article id="sec_datos_bancarios" aria-labelledby="tit_bancarios">
+                    <h3 id="tit_bancarios">6. Datos bancarios para pago de nómina</h3>
+
+                    <fieldset>
+                        <legend>Cuenta para dispersión de nómina</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — PAGO MASIVO (empresa 2500 empleados):
+                            Con este módulo y la cuenta bancaria registrada, el sistema
+                            debe poder generar el archivo de dispersión bancaria en formato
+                            ACH (Cámara de Compensación Automatizada) o el formato
+                            específico de cada banco (PSE, Bancolombia, Davivienda, etc.)
+                            Esto permite pagar los 2500 salarios con un solo archivo.
+                        -->
+                        <label for="banco_nombre">
+                            Banco: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="banco_nombre" name="id_banco" required>
+                            <option value="" disabled selected>— Seleccione el banco —</option>
+                            <option value="1">Bancolombia</option>
+                            <option value="2">Banco Bogotá</option>
+                            <option value="3">Davivienda</option>
+                            <option value="4">BBVA Colombia</option>
+                            <option value="5">Banco Popular</option>
+                            <option value="6">Banco Occidente</option>
+                            <option value="7">Banco Agrario</option>
+                            <option value="8">Colpatria (Scotiabank)</option>
+                            <option value="9">Itaú</option>
+                            <option value="10">Nequi</option>
+                            <option value="11">Daviplata</option>
+                            <option value="12">Lulo Bank</option>
+                            <option value="13">Nubank Colombia</option>
+                            <option value="14">Otro</option>
+                        </select>
+
+                        <label for="tipo_cuenta">
+                            Tipo de cuenta: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_cuenta" name="tipo_cuenta" required>
+                            <option value="ahorros" selected>Ahorros</option>
+                            <option value="corriente">Corriente</option>
+                            <option value="nequi">Nequi (por celular)</option>
+                            <option value="daviplata">Daviplata (por celular)</option>
+                        </select>
+
+                        <label for="numero_cuenta">
+                            Número de cuenta: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="numero_cuenta" name="numero_cuenta"
+                               required pattern="[0-9]{8,16}"
+                               placeholder="Solo números"
+                               autocomplete="off"
+                               aria-describedby="ayuda_cuenta">
+                        <small id="ayuda_cuenta">
+                            Verifique que la cuenta esté a nombre del empleado.
+                            Cuentas de terceros requieren autorización escrita firmada.
+                        </small>
+
+                        <label for="titular_cuenta">Titular de la cuenta:</label>
+                        <input type="text" id="titular_cuenta" name="titular_cuenta"
+                               placeholder="Nombre completo del titular"
+                               aria-describedby="ayuda_titular">
+                        <small id="ayuda_titular">
+                            Si la cuenta no es del empleado, se requiere carta de
+                            autorización firmada y copia del documento del titular.
+                        </small>
+
+                        <label for="forma_pago_preferida">Forma de pago preferida:</label>
+                        <select id="forma_pago_preferida" name="forma_pago_preferida">
+                            <option value="transferencia" selected>
+                                Transferencia bancaria (recomendado)
+                            </option>
+                            <option value="cheque">Cheque</option>
+                            <option value="efectivo">Efectivo (solo si aplica)</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO: DOCUMENTOS ─── -->
+                <article id="sec_documentos" aria-labelledby="tit_documentos">
+                    <h3 id="tit_documentos">7. Documentos del expediente</h3>
+
+                    <fieldset>
+                        <legend>Documentos obligatorios</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN — GESTIÓN DOCUMENTAL:
+                            Cada documento debe tener:
+                              - Archivo (PDF/imagen)
+                              - Fecha de entrega al empleador
+                              - Fecha de vencimiento (si aplica)
+                              - Estado: pendiente / entregado / vencido
+                            El sistema debe enviar alertas cuando un documento
+                            esté próximo a vencer (30 días antes).
+
+                            DOCUMENTOS OBLIGATORIOS POR LEY:
+                              1. Fotocopia cédula de ciudadanía
+                              2. Hoja de vida
+                              3. Soportes educativos (diplomas, títulos)
+                              4. Carta de referencias laborales
+                              5. Examen médico de ingreso (Art. 57 CST)
+                              6. Afiliación EPS (firmada)
+                              7. Afiliación fondo de pensiones
+                              8. Contrato laboral firmado (copia empleador y empleado)
+                              9. Autorización datos personales (Ley 1581/2012)
+                             10. Declaración de bienes (para cargos de manejo)
+                        -->
+
+                        <table>
+                            <caption>Control de documentos del expediente laboral</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Documento</th>
+                                    <th scope="col">¿Entregado?</th>
+                                    <th scope="col">Fecha entrega</th>
+                                    <th scope="col">Vence</th>
+                                    <th scope="col">Cargar archivo</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Fotocopia cédula</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_cedula_entregado"
+                                               value="1"
+                                               aria-label="Cédula entregada">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_cedula_fecha"
+                                               aria-label="Fecha entrega cédula">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_cedula_vence"
+                                               aria-label="Vencimiento cédula">
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_cedula_archivo"
+                                               accept=".pdf,.jpg,.png"
+                                               aria-label="Archivo cédula">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_cedula">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Examen médico de ingreso</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_examen_entregado"
+                                               value="1"
+                                               aria-label="Examen entregado">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_examen_fecha"
+                                               aria-label="Fecha examen médico">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_examen_vence"
+                                               aria-label="Vencimiento examen">
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_examen_archivo"
+                                               accept=".pdf,.jpg,.png"
+                                               aria-label="Archivo examen">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_examen">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Contrato firmado</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_contrato_entregado"
+                                               value="1"
+                                               aria-label="Contrato entregado">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_contrato_fecha">
+                                    </td>
+                                    <td>
+                                        <output>No vence</output>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_contrato_archivo"
+                                               accept=".pdf"
+                                               aria-label="Contrato PDF">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_contrato">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Afiliación EPS firmada</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_eps_entregado" value="1">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_eps_fecha">
+                                    </td>
+                                    <td>
+                                        <output>No vence</output>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_eps_archivo"
+                                               accept=".pdf,.jpg,.png">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_eps">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Afiliación pensión firmada</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_pension_entregado" value="1">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_pension_fecha">
+                                    </td>
+                                    <td>
+                                        <output>No vence</output>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_pension_archivo"
+                                               accept=".pdf,.jpg,.png">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_pension">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Hoja de vida</td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_hv_entregado" value="1">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_hv_fecha">
+                                    </td>
+                                    <td>
+                                        <output>No vence</output>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_hv_archivo"
+                                               accept=".pdf,.doc,.docx">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_hv">Pendiente</output>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        Autorización datos personales
+                                        <br><small>(Ley 1581/2012)</small>
+                                    </td>
+                                    <td>
+                                        <input type="checkbox"
+                                               name="doc_habeas_entregado" value="1">
+                                    </td>
+                                    <td>
+                                        <input type="date" name="doc_habeas_fecha">
+                                    </td>
+                                    <td>
+                                        <output>No vence</output>
+                                    </td>
+                                    <td>
+                                        <input type="file" name="doc_habeas_archivo"
+                                               accept=".pdf">
+                                    </td>
+                                    <td>
+                                        <output name="estado_doc_habeas">Pendiente</output>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Observaciones del expediente</legend>
+
+                        <label for="obs_expediente">Observaciones:</label>
+                        <textarea id="obs_expediente" name="obs_expediente"
+                                  rows="3" maxlength="500"
+                                  placeholder="Documentos pendientes, acuerdos especiales, etc.">
+                        </textarea>
+                    </fieldset>
+                </article>
+
+                <!-- ACCIONES DEL FORMULARIO -->
+                <fieldset id="acciones_empleado">
+                    <legend>Guardar empleado</legend>
+
+                    <!--
+                        ACCIONES Y FLUJO:
+
+                        btn_guardar_empleado:
+                          → Validar todos los campos obligatorios
+                          → Verificar cédula no duplicada
+                          → INSERT/UPDATE en tabla empleados
+                          → INSERT en empleados_historial_cambios
+                          → Redirigir a lista de empleados con mensaje de éxito
+
+                        btn_guardar_continuar_contrato:
+                          → Lo mismo anterior
+                          → + Redirigir a generar contrato en PDF
+
+                        btn_guardar_ir_nomina:
+                          → Lo mismo anterior
+                          → + Redirigir a formulario_nomina con id_empleado pre-cargado
+
+                        btn_cancelar → Volver a listado sin guardar
+                    -->
+                    <button type="submit" name="accion" value="guardar"
+                            id="btn_guardar_empleado">
+                        Guardar empleado
+                    </button>
+
+                    <button type="submit" name="accion" value="guardar_y_contrato"
+                            id="btn_guardar_continuar_contrato">
+                        Guardar y generar contrato PDF
+                    </button>
+
+                    <button type="submit" name="accion" value="guardar_e_ir_nomina"
+                            id="btn_guardar_ir_nomina">
+                        Guardar e ir a liquidar nómina
+                    </button>
+
+                    <button type="reset" id="btn_limpiar_empleado">
+                        Limpiar formulario
+                    </button>
+
+                    <a href="empleados.php" role="button" id="btn_cancelar">
+                        Cancelar
+                    </a>
+                </fieldset>
+
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECCIÓN 3: ESTRUCTURA DE BASE DE DATOS
+             Este bloque es el contrato técnico con el desarrollador.
+             Documenta las tablas necesarias para soportar todos los módulos.
+        ═══════════════════════════════════════════════════════════════ -->
+        <section id="sec_bd" aria-labelledby="titulo_bd">
+            <h2 id="titulo_bd">Estructura de base de datos — Módulo empleados</h2>
+            <p>
+                <small>
+                    Estas tablas deben crearse antes de desarrollar cualquier módulo.
+                    Son la base de todo el sistema contable y de nómina.
+                </small>
+            </p>
+
+            <article>
+                <h3>Tablas maestras (catálogos)</h3>
+                <table>
+                    <caption>Tablas de catálogo — No cambian frecuentemente</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Tabla</th>
+                            <th scope="col">Campos principales</th>
+                            <th scope="col">Propósito</th>
+                            <th scope="col">¿Empresa grande necesita más?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>cargos</code></td>
+                            <td>
+                                id_cargo, nombre_cargo, nivel_cargo,
+                                salario_min, salario_max, nivel_arl,
+                                id_area, descripcion_funciones
+                            </td>
+                            <td>Catálogo de cargos de la empresa</td>
+                            <td>
+                                Sí: agregar id_banda_salarial, id_nivel_jerarquico,
+                                requiere_tarjeta_profesional
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>areas</code></td>
+                            <td>
+                                id_area, nombre_area, codigo_area,
+                                id_gerente, id_centro_costo
+                            </td>
+                            <td>Áreas o departamentos de la empresa</td>
+                            <td>Sí: agregar presupuesto_headcount, nivel_organigrama</td>
+                        </tr>
+                        <tr>
+                            <td><code>centros_costo</code></td>
+                            <td>
+                                id_cc, codigo_cc, nombre_cc,
+                                id_area, presupuesto_mensual, activo
+                            </td>
+                            <td>Centros de costo para imputación contable</td>
+                            <td>Crítico para empresa grande — obligatorio desde el inicio</td>
+                        </tr>
+                        <tr>
+                            <td><code>bancos</code></td>
+                            <td>
+                                id_banco, nombre_banco, codigo_banco_acuerdo,
+                                codigo_swift, activo
+                            </td>
+                            <td>Catálogo de bancos Colombia</td>
+                            <td>
+                                Sí: agregar formato_dispersión,
+                                tiene_integracion_api
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>eps</code></td>
+                            <td>id_eps, nombre_eps, nit_eps, codigo_pila, activo</td>
+                            <td>Entidades prestadoras de salud activas</td>
+                            <td>No varía</td>
+                        </tr>
+                        <tr>
+                            <td><code>fondos_pension</code></td>
+                            <td>
+                                id_fondo, nombre_fondo, nit_fondo,
+                                tipo_regimen, codigo_pila, activo
+                            </td>
+                            <td>Fondos de pensiones activos en Colombia</td>
+                            <td>No varía</td>
+                        </tr>
+                        <tr>
+                            <td><code>cajas_compensacion</code></td>
+                            <td>
+                                id_caja, nombre_caja, nit_caja,
+                                codigo_pila, departamento, activo
+                            </td>
+                            <td>Cajas de compensación familiar</td>
+                            <td>No varía</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article>
+                <h3>Tablas transaccionales (empleados)</h3>
+                <table>
+                    <caption>Tablas principales — Se modifican con cada empleado</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Tabla</th>
+                            <th scope="col">Campos clave</th>
+                            <th scope="col">Regla crítica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>empleados</code></td>
+                            <td>
+                                id_empleado (PK autoincrement),
+                                codigo_empleado (único, generado),
+                                tipo_doc, numero_doc (único),
+                                primer_apellido, segundo_apellido,
+                                primer_nombre, segundo_nombre,
+                                fecha_nacimiento, genero, estado_civil,
+                                personas_cargo, grupo_sanguineo,
+                                nivel_escolaridad, profesion,
+                                departamento, municipio, direccion,
+                                telefono, correo_personal, correo_corporativo,
+                                contacto_emergencia_nombre,
+                                contacto_emergencia_telefono,
+                                id_cargo (FK), id_area (FK),
+                                id_centro_costo (FK), sede,
+                                jornada_laboral, turno, id_jefe (FK),
+                                id_eps (FK), id_fondo_pension (FK),
+                                id_caja_compensacion (FK),
+                                id_arl, nivel_riesgo_arl,
+                                tipo_cotizante, exento_parafiscales,
+                                id_banco (FK), tipo_cuenta, numero_cuenta,
+                                titular_cuenta,
+                                estado_empleado (activo/suspendido/retirado),
+                                fecha_registro, usuario_registro,
+                                fecha_modificacion, usuario_modificacion
+                            </td>
+                            <td>
+                                numero_doc debe tener índice UNIQUE.
+                                estado_empleado controla si aparece en nómina.
+                                Nunca eliminar registros: solo cambiar estado a "retirado".
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>contratos</code></td>
+                            <td>
+                                id_contrato (PK), id_empleado (FK),
+                                tipo_contrato, fecha_ingreso, fecha_fin_contrato,
+                                periodo_prueba_dias, fecha_fin_prueba,
+                                objeto_contrato, lugar_trabajo,
+                                numero_renovaciones, tipo_salario,
+                                salario_basico, forma_pago,
+                                motivo_cambio_salario,
+                                estado_contrato (vigente/terminado),
+                                fecha_registro
+                            </td>
+                            <td>
+                                Un empleado puede tener VARIOS contratos en el tiempo.
+                                Solo uno puede estar en estado "vigente" a la vez.
+                                Nunca modificar un contrato terminado — solo crear uno nuevo.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>historial_salarial</code></td>
+                            <td>
+                                id_historial (PK), id_empleado (FK),
+                                id_contrato (FK), salario_anterior,
+                                salario_nuevo, fecha_cambio,
+                                motivo_cambio, usuario_que_cambio
+                            </td>
+                            <td>
+                                NUNCA se elimina ni modifica.
+                                Solo INSERT.
+                                Es el soporte legal de los cambios salariales.
+                                Requerido para calcular correctamente la liquidación
+                                definitiva (promedio de último año de salario).
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>documentos_empleado</code></td>
+                            <td>
+                                id_doc (PK), id_empleado (FK),
+                                tipo_documento, nombre_archivo,
+                                ruta_archivo, fecha_entrega,
+                                fecha_vencimiento, estado_doc,
+                                usuario_carga
+                            </td>
+                            <td>
+                                Cada archivo tiene su propio registro.
+                                El sistema debe revisar diariamente los vencimientos.
+                                Nunca sobrescribir archivos — versionar con fecha.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>historial_cambios_empleado</code></td>
+                            <td>
+                                id_cambio (PK), id_empleado (FK),
+                                campo_modificado, valor_anterior,
+                                valor_nuevo, fecha_cambio,
+                                usuario_responsable, ip_usuario
+                            </td>
+                            <td>
+                                Auditoría completa de todos los cambios.
+                                Obligatorio por normativa DIAN y UGPP.
+                                Solo INSERT — jamás UPDATE o DELETE.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>
+            <small>
+                MY_BUSINESS S.A.S. | Módulo de Empleados v1.0 |
+                Marco legal: CST · Ley 100/93 · Ley 789/2002 ·
+                Ley 2040/2020 · Ley 2101/2021 · Ley 1581/2012 |
+                Gestión documental: Decreto 2649/93
+            </small>
+        </p>
+        <p>
+            <small>
+                <strong>Retención de documentos:</strong>
+                Los expedientes laborales deben conservarse mínimo 20 años
+                después del retiro del empleado (Decreto 2649/93 y UGPP).
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>

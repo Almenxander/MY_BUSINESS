@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novedades de Nómina — MY_BUSINESS</title>
+</head>
+<body>
+
+    <header>
+        <hgroup>
+            <h1>MY_BUSINESS S.A.S.</h1>
+            <p>NIT: 000.000.000-0 | Módulo de Novedades de Nómina</p>
+        </hgroup>
+        <nav aria-label="Secciones del módulo">
+            <ol>
+                <li><a href="#sec_listado_novedades">Listado de novedades</a></li>
+                <li><a href="#sec_nueva_novedad">Registrar novedad</a></li>
+                <li><a href="#sec_incapacidades">Incapacidades</a></li>
+                <li><a href="#sec_vacaciones">Vacaciones</a></li>
+                <li><a href="#sec_permisos">Permisos y licencias</a></li>
+                <li><a href="#sec_embargos">Embargos judiciales</a></li>
+                <li><a href="#sec_otros">Otros descuentos y pagos</a></li>
+                <li><a href="#sec_reglas">Reglas de cálculo</a></li>
+            </ol>
+        </nav>
+    </header>
+
+    <hr>
+
+    <main>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 1 — LISTADO DE NOVEDADES PENDIENTES
+             
+             IMPACTO EN TU EMPRESA:
+             Antes de correr la nómina quincenal o mensual, el responsable
+             de RRHH debe revisar TODAS las novedades pendientes de ese
+             período. Si hay una incapacidad sin registrar, el empleado
+             recibe más de lo que le corresponde y luego hay que hacer
+             una nota crédito complicada.
+
+             AUTOMATIZACIÓN:
+             — Al abrir este listado el sistema filtra automáticamente
+               las novedades del período de nómina actual (abierto).
+             — Las novedades en estado "pendiente" bloquean el cierre
+               de nómina hasta ser aprobadas o rechazadas.
+             — Color ROJO: novedad sin soporte documental cargado.
+             — Color AMARILLO: novedad pendiente de aprobación.
+             — Color VERDE: novedad aprobada lista para procesar.
+             — Al hacer clic en "Cerrar período" el sistema toma todas
+               las novedades aprobadas y las aplica al desprendible.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_listado_novedades" aria-labelledby="tit_listado">
+            <h2 id="tit_listado">Novedades del período</h2>
+
+            <p>
+                <small>
+                    Período activo:
+                    <output name="periodo_activo">Mayo 2026 — 1ra quincena</output>
+                    |
+                    Novedades pendientes:
+                    <output name="cant_pendientes">0</output>
+                    |
+                    Novedades aprobadas:
+                    <output name="cant_aprobadas">0</output>
+                </small>
+            </p>
+
+            <nav aria-label="Acciones de novedades">
+                <!--
+                    btn_nueva_novedad → lleva al formulario de registro
+                    btn_aprobar_lote  → aprueba todas las novedades con soporte
+                    btn_exportar      → Excel con todas las novedades del período
+                    btn_cerrar_periodo→ aplica novedades a nómina y cierra el período
+                                        IMPORTANTE: solo disponible si no hay pendientes
+                -->
+                <button type="button" id="btn_nueva_novedad">+ Registrar novedad</button>
+                <button type="button" id="btn_aprobar_lote">Aprobar todas con soporte</button>
+                <button type="button" id="btn_exportar_novedades">Exportar período</button>
+                <button type="button" id="btn_cerrar_periodo"
+                        aria-describedby="ayuda_cierre">
+                    Cerrar período y aplicar a nómina
+                </button>
+                <small id="ayuda_cierre">
+                    Solo disponible cuando todas las novedades estén aprobadas.
+                    Esta acción es irreversible para el período actual.
+                </small>
+            </nav>
+
+            <!-- FILTROS -->
+            <form method="get" action="novedades.php" aria-label="Filtrar novedades">
+                <fieldset>
+                    <legend>Filtrar novedades</legend>
+
+                    <label for="filtro_empleado_nov">Empleado:</label>
+                    <input type="search" id="filtro_empleado_nov"
+                           name="q" placeholder="Nombre o cédula">
+
+                    <label for="filtro_tipo_nov">Tipo de novedad:</label>
+                    <select id="filtro_tipo_nov" name="tipo">
+                        <option value="">Todas</option>
+                        <option value="incapacidad">Incapacidad</option>
+                        <option value="vacaciones">Vacaciones</option>
+                        <option value="permiso_remunerado">Permiso remunerado</option>
+                        <option value="permiso_no_remunerado">Permiso no remunerado</option>
+                        <option value="licencia_maternidad">Licencia maternidad</option>
+                        <option value="licencia_paternidad">Licencia paternidad</option>
+                        <option value="licencia_luto">Licencia de luto</option>
+                        <option value="embargo">Embargo judicial</option>
+                        <option value="horas_extras">Horas extras</option>
+                        <option value="comision">Comisión / bonificación</option>
+                        <option value="prestamo">Préstamo empresa</option>
+                        <option value="descuento_disciplinario">Descuento disciplinario</option>
+                        <option value="cambio_salario">Cambio de salario</option>
+                        <option value="cambio_cargo">Cambio de cargo</option>
+                        <option value="ingreso">Ingreso nuevo empleado</option>
+                        <option value="retiro">Retiro / liquidación</option>
+                    </select>
+
+                    <label for="filtro_estado_nov">Estado:</label>
+                    <select id="filtro_estado_nov" name="estado">
+                        <option value="">Todos</option>
+                        <option value="pendiente" selected>Pendiente</option>
+                        <option value="aprobada">Aprobada</option>
+                        <option value="rechazada">Rechazada</option>
+                        <option value="procesada">Procesada en nómina</option>
+                    </select>
+
+                    <button type="submit">Filtrar</button>
+                    <button type="reset">Limpiar</button>
+                </fieldset>
+            </form>
+
+            <!-- TABLA DE NOVEDADES -->
+            <table id="tabla_novedades">
+                <caption>
+                    Novedades registradas — período activo
+                    <small>Las novedades procesadas ya se incluyeron en la nómina</small>
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            <input type="checkbox" aria-label="Seleccionar todas">
+                        </th>
+                        <th scope="col">Empleado</th>
+                        <th scope="col">Tipo de novedad</th>
+                        <th scope="col">Fecha inicio</th>
+                        <th scope="col">Fecha fin</th>
+                        <th scope="col">Días / Valor</th>
+                        <th scope="col">Soporte</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Impacto en nómina</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Fila de ejemplo — se genera dinámicamente desde BD -->
+                    <tr>
+                        <td>
+                            <input type="checkbox" aria-label="Seleccionar novedad">
+                        </td>
+                        <td>Pérez García, Juan C.</td>
+                        <td>Incapacidad EPS</td>
+                        <td><time datetime="2026-05-02">02/05/2026</time></td>
+                        <td><time datetime="2026-05-05">05/05/2026</time></td>
+                        <td>4 días</td>
+                        <td>
+                            <output name="soporte_nov_1">Sin soporte</output>
+                        </td>
+                        <td>
+                            <output name="estado_nov_1">Pendiente</output>
+                        </td>
+                        <td>
+                            <output name="impacto_nov_1">
+                                Días 1-2: empresa paga 100%
+                                Días 3-4: EPS paga 66.67%
+                            </output>
+                        </td>
+                        <td>
+                            <a href="novedades.php?id=1&modo=editar">Editar</a> |
+                            <a href="novedades.php?id=1&accion=aprobar">Aprobar</a> |
+                            <a href="novedades.php?id=1&accion=rechazar">Rechazar</a>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5">
+                            <small>
+                                Total novedades del período:
+                                <output name="total_novedades">1</output>
+                            </small>
+                        </td>
+                        <td colspan="5">
+                            <small>
+                                Impacto total en nómina:
+                                <output name="impacto_total_periodo">$0</output>
+                            </small>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 2 — FORMULARIO DE REGISTRO DE NOVEDAD
+             
+             IMPACTO EN TU EMPRESA:
+             Este es el formulario central. Desde aquí se registra
+             cualquier tipo de novedad. Según el tipo que selecciones,
+             el formulario muestra u oculta campos específicos.
+             
+             AUTOMATIZACIÓN:
+             — Al seleccionar tipo_novedad → mostrar solo los campos
+               que aplican para ese tipo (lógica en backend con PHP
+               o en frontend con JS cuando lo implementes).
+             — Al guardar → insertar en tabla novedades_nomina.
+             — Al guardar → si tipo = incapacidad o vacaciones,
+               actualizar automáticamente los días disponibles del
+               empleado en tabla acumulados_empleado.
+             — Al guardar → si tipo = cambio_salario, crear nuevo
+               registro en historial_salarial (NUNCA modificar el
+               registro anterior).
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_nueva_novedad" aria-labelledby="tit_nueva_nov">
+            <h2 id="tit_nueva_nov">Registrar novedad</h2>
+
+            <form id="form_novedad" action="guardar_novedad.php" method="post"
+                  enctype="multipart/form-data" novalidate>
+
+                <input type="hidden" name="id_novedad" value="">
+                <input type="hidden" name="modo" value="crear">
+
+                <article aria-labelledby="tit_datos_nov">
+                    <h3 id="tit_datos_nov">1. Datos generales de la novedad</h3>
+
+                    <fieldset>
+                        <legend>Empleado y período</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN:
+                            Al seleccionar empleado → cargar automáticamente:
+                              salario_base, días_vacaciones_disponibles,
+                              saldo_cesantias, eps, fondo_pension,
+                              tipo_contrato, fecha_ingreso.
+                            Esto evita errores de digitación y acelera
+                            el registro para la empresa grande.
+                        -->
+                        <label for="id_empleado_nov">
+                            Empleado: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="id_empleado_nov" name="id_empleado" required>
+                            <option value="" disabled selected>
+                                — Seleccione el empleado —
+                            </option>
+                            <option value="1">
+                                Pérez García, Juan C. · CC 12345678 · Operario
+                            </option>
+                        </select>
+
+                        <label for="periodo_novedad">
+                            Período de nómina al que aplica:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="periodo_novedad" name="periodo_novedad" required>
+                            <!--
+                                AUTOMATIZACIÓN: Se carga con los períodos
+                                que están abiertos (no cerrados).
+                                Una novedad solo puede aplicarse a un período
+                                que aún no haya sido procesado.
+                            -->
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="2026-05-Q1" selected>
+                                Mayo 2026 — 1ra quincena (1 al 15)
+                            </option>
+                            <option value="2026-05-Q2">
+                                Mayo 2026 — 2da quincena (16 al 31)
+                            </option>
+                        </select>
+
+                        <label for="tipo_novedad">
+                            Tipo de novedad: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="tipo_novedad" name="tipo_novedad" required
+                                aria-describedby="ayuda_tipo_nov">
+                            <optgroup label="Ausencias con pago">
+                                <option value="incapacidad_eps">
+                                    Incapacidad enfermedad general (EPS)
+                                </option>
+                                <option value="incapacidad_arl">
+                                    Incapacidad accidente de trabajo (ARL)
+                                </option>
+                                <option value="licencia_maternidad">
+                                    Licencia de maternidad (18 semanas)
+                                </option>
+                                <option value="licencia_paternidad">
+                                    Licencia de paternidad (2 semanas)
+                                </option>
+                                <option value="licencia_luto">
+                                    Licencia de luto (5 días hábiles)
+                                </option>
+                                <option value="permiso_remunerado">
+                                    Permiso remunerado
+                                </option>
+                                <option value="vacaciones">
+                                    Vacaciones disfrutadas
+                                </option>
+                                <option value="vacaciones_compensadas">
+                                    Vacaciones compensadas en dinero
+                                </option>
+                            </optgroup>
+                            <optgroup label="Ausencias sin pago">
+                                <option value="permiso_no_remunerado">
+                                    Permiso no remunerado
+                                </option>
+                                <option value="suspension_disciplinaria">
+                                    Suspensión disciplinaria
+                                </option>
+                                <option value="ausencia_injustificada">
+                                    Ausencia injustificada
+                                </option>
+                                <option value="huelga_legal">
+                                    Huelga legal (no pago suspendido)
+                                </option>
+                            </optgroup>
+                            <optgroup label="Pagos adicionales">
+                                <option value="horas_extras_diurnas">
+                                    Horas extras diurnas
+                                </option>
+                                <option value="horas_extras_nocturnas">
+                                    Horas extras nocturnas
+                                </option>
+                                <option value="horas_extras_dominicales">
+                                    Horas extras dominicales/festivas
+                                </option>
+                                <option value="comision_constitutiva">
+                                    Comisión constitutiva de salario
+                                </option>
+                                <option value="comision_no_constitutiva">
+                                    Comisión no constitutiva (Art. 128 CST)
+                                </option>
+                                <option value="bonificacion">
+                                    Bonificación
+                                </option>
+                                <option value="viaticos_permanentes">
+                                    Viáticos permanentes (sí IBC)
+                                </option>
+                                <option value="viaticos_accidentales">
+                                    Viáticos accidentales (no IBC)
+                                </option>
+                            </optgroup>
+                            <optgroup label="Descuentos">
+                                <option value="embargo_judicial">
+                                    Embargo judicial
+                                </option>
+                                <option value="libranza">
+                                    Libranza (entidad financiera)
+                                </option>
+                                <option value="prestamo_empresa">
+                                    Préstamo empresa
+                                </option>
+                                <option value="faltante_caja">
+                                    Faltante de caja / pérdida
+                                </option>
+                                <option value="devolucion_anticipo">
+                                    Devolución anticipo de nómina
+                                </option>
+                                <option value="descuento_uniforme">
+                                    Descuento dotación / uniforme
+                                </option>
+                            </optgroup>
+                            <optgroup label="Cambios de condición">
+                                <option value="cambio_salario">
+                                    Cambio de salario
+                                </option>
+                                <option value="cambio_cargo">
+                                    Cambio de cargo
+                                </option>
+                                <option value="cambio_area">
+                                    Cambio de área / centro de costo
+                                </option>
+                                <option value="cambio_jornada">
+                                    Cambio de jornada laboral
+                                </option>
+                                <option value="cambio_cuenta_bancaria">
+                                    Cambio de cuenta bancaria
+                                </option>
+                                <option value="ingreso">
+                                    Ingreso nuevo empleado (primer pago parcial)
+                                </option>
+                                <option value="retiro">
+                                    Retiro / inicio liquidación definitiva
+                                </option>
+                            </optgroup>
+                        </select>
+                        <small id="ayuda_tipo_nov">
+                            Según el tipo seleccionado aparecerán los campos
+                            específicos en las secciones siguientes.
+                        </small>
+
+                        <label for="fecha_inicio_nov">
+                            Fecha de inicio: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_inicio_nov"
+                               name="fecha_inicio" required>
+
+                        <label for="fecha_fin_nov">Fecha de fin:</label>
+                        <input type="date" id="fecha_fin_nov" name="fecha_fin"
+                               aria-describedby="ayuda_fecha_fin">
+                        <small id="ayuda_fecha_fin">
+                            Para novedades de un solo día dejar igual a fecha de inicio.
+                            Para cambios de condición (salario, cargo) no aplica fecha fin.
+                        </small>
+
+                        <label for="dias_novedad">
+                            Días calendario de la novedad:
+                        </label>
+                        <output id="dias_novedad" name="dias_novedad"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_novedad_valor" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Descripción y soporte</legend>
+
+                        <label for="descripcion_novedad">Descripción:</label>
+                        <textarea id="descripcion_novedad" name="descripcion"
+                                  rows="3" maxlength="500"
+                                  placeholder="Detalle de la novedad. Para embargos: número del proceso judicial. Para incapacidades: diagnóstico si está disponible.">
+                        </textarea>
+
+                        <!--
+                            SOPORTE DOCUMENTAL OBLIGATORIO POR TIPO:
+                            Incapacidad     → Certificado médico (original escaneado)
+                            Vacaciones      → Solicitud firmada por el empleado
+                            Licencia luto   → Registro civil de defunción
+                            L. maternidad   → Registro civil de nacimiento o certificado médico
+                            L. paternidad   → Registro civil de nacimiento
+                            Permiso rem.    → Solicitud firmada + aprobación jefe
+                            Embargo         → Auto de embargo del juzgado (OBLIGATORIO)
+                            Préstamo        → Pagaré o acuerdo firmado
+                            Libranza        → Autorización firmada Ley 1527/2012
+                            Cambio salario  → Acta de acuerdo o carta de modificación
+                        -->
+                        <label for="soporte_novedad">
+                            Documento soporte (PDF o imagen):
+                        </label>
+                        <input type="file" id="soporte_novedad"
+                               name="soporte" accept=".pdf,.jpg,.jpeg,.png"
+                               aria-describedby="ayuda_soporte">
+                        <small id="ayuda_soporte">
+                            Formatos: PDF, JPG, PNG. Tamaño máximo: 5MB.
+                            Sin soporte la novedad no podrá ser aprobada.
+                            Los soportes se conservan 20 años por normativa UGPP.
+                        </small>
+
+                        <label for="registrado_por">Registrado por:</label>
+                        <input type="text" id="registrado_por"
+                               name="registrado_por"
+                               placeholder="Nombre del responsable de RRHH">
+
+                        <label for="aprobado_por_nov">Aprobado por (jefe inmediato):</label>
+                        <select id="aprobado_por_nov" name="id_aprobador">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <!--
+                                AUTOMATIZACIÓN: Se carga con empleados
+                                que tienen rol de aprobador en el sistema.
+                            -->
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ══════════════════════════════════════════════════
+                     ARTÍCULO 3 — INCAPACIDADES
+                     
+                     IMPACTO EN TU EMPRESA:
+                     Las incapacidades son la novedad más frecuente y
+                     la más compleja. Si no la registras bien, puedes
+                     pagar de más (días que debió pagar la EPS) o
+                     pagar de menos (días que sí debía pagar la empresa).
+                     Para la empresa de 2500 empleados, esto se multiplica
+                     y genera diferencias millonarias con las EPS.
+                ══════════════════════════════════════════════════ -->
+                <article id="sec_incapacidades" aria-labelledby="tit_incap">
+                    <h3 id="tit_incap">2. Incapacidades</h3>
+                    <p>
+                        <small>
+                            Complete esta sección solo si el tipo de novedad
+                            es incapacidad por enfermedad general o accidente laboral.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Datos de la incapacidad</legend>
+
+                        <label for="tipo_incapacidad">Tipo:</label>
+                        <select id="tipo_incapacidad" name="tipo_incapacidad">
+                            <option value="enfermedad_general">
+                                Enfermedad general (EPS paga desde día 3)
+                            </option>
+                            <option value="accidente_trabajo">
+                                Accidente de trabajo (ARL paga desde día 1)
+                            </option>
+                            <option value="enfermedad_profesional">
+                                Enfermedad profesional / laboral (ARL)
+                            </option>
+                        </select>
+
+                        <label for="numero_radicado_incap">
+                            Número de radicado / FURAT:
+                        </label>
+                        <input type="text" id="numero_radicado_incap"
+                               name="numero_radicado"
+                               placeholder="Número de radicado en EPS o ARL"
+                               aria-describedby="ayuda_radicado">
+                        <small id="ayuda_radicado">
+                            Para accidentes de trabajo: número del FURAT
+                            (Formulario Único de Reporte de Accidentes de Trabajo).
+                            Sin este número la ARL puede negarse a reconocer el pago.
+                        </small>
+
+                        <label for="dias_incap_total">Días totales de incapacidad:</label>
+                        <input type="number" id="dias_incap_total"
+                               name="dias_incapacidad_total"
+                               value="0" min="1" max="540"
+                               aria-describedby="ayuda_dias_incap">
+                        <small id="ayuda_dias_incap">
+                            Máximo legal: 180 días prorrogables hasta 540 días
+                            (Art. 227 CST + Decreto 2943/2013).
+                            Si supera 180 días → la empresa puede iniciar proceso
+                            de pérdida de capacidad laboral.
+                        </small>
+
+                        <!--
+                            REGLAS LEGALES DE PAGO DE INCAPACIDADES:
+
+                            ENFERMEDAD GENERAL (Art. 227 CST + Ley 100/93):
+                            Días 1-2   : EMPRESA paga el 100% del salario
+                            Días 3-90  : EPS paga 66.67% del IBC
+                            Días 91-180: EPS paga 50% del IBC
+                            Días 181+  : EPS puede prorrogar o remitir a calificación
+                            
+                            NOTA: Si el empleado gana salario mínimo la EPS
+                            paga el 100% desde el día 3 (no el 66.67%).
+                            
+                            ACCIDENTE DE TRABAJO (Art. 8 Decreto 1295/94):
+                            Día 1      : EMPRESA paga el 100%
+                            Días 2+    : ARL paga 100% del IBC
+                            
+                            AUTOMATIZACIÓN CRÍTICA:
+                            El sistema debe calcular y mostrar:
+                              - Cuántos días paga la empresa
+                              - Cuántos días paga la EPS/ARL
+                              - Valor que debe cobrarle a la EPS/ARL
+                              - Si hay incapacidad > 180 días → alerta
+                              - El auxilio de transporte se proporciona
+                                solo por los días efectivamente laborados
+                                (NO por los días de incapacidad)
+                        -->
+
+                        <label for="dias_paga_empresa">
+                            Días que paga la empresa:
+                        </label>
+                        <output id="dias_paga_empresa" name="dias_paga_empresa"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+
+                        <label for="dias_paga_eps_arl">
+                            Días que paga EPS / ARL:
+                        </label>
+                        <output id="dias_paga_eps_arl" name="dias_paga_eps_arl"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+
+                        <label for="valor_a_cobrar_eps">
+                            Valor a cobrar a EPS / ARL ($):
+                        </label>
+                        <output id="valor_a_cobrar_eps" name="valor_cobrar_eps"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="valor_cobrar_eps_valor" value="0">
+
+                        <label for="medico_tratante">Médico tratante / IPS:</label>
+                        <input type="text" id="medico_tratante"
+                               name="medico_tratante"
+                               placeholder="Nombre del médico o institución">
+
+                        <label for="diagnostico_incap">
+                            Diagnóstico (CIE-10):
+                        </label>
+                        <input type="text" id="diagnostico_incap"
+                               name="codigo_cie10"
+                               placeholder="Ej: J06.9 — Infección aguda vías respiratorias"
+                               aria-describedby="ayuda_cie10">
+                        <small id="ayuda_cie10">
+                            El código CIE-10 es obligatorio para recobros a la EPS.
+                            Sin este código la EPS puede objetar el pago.
+                        </small>
+
+                        <label for="es_reincidencia">¿Es reincidencia?</label>
+                        <select id="es_reincidencia" name="es_reincidencia">
+                            <option value="no" selected>No</option>
+                            <option value="si">
+                                Sí (misma enfermedad, menos de 30 días entre incapacidades)
+                            </option>
+                        </select>
+                        <small>
+                            Si es reincidencia en la misma patología con menos de
+                            30 días de diferencia, se cuenta como una sola incapacidad
+                            continua para efectos del pago.
+                        </small>
+                    </fieldset>
+                </article>
+
+                <!-- ══════════════════════════════════════════════════
+                     ARTÍCULO 4 — VACACIONES
+                     
+                     IMPACTO EN TU EMPRESA:
+                     Cada empleado acumula 1.25 días de vacaciones
+                     por mes trabajado (15 días hábiles por año).
+                     Este módulo controla ese saldo. Si no lo llevas,
+                     cuando alguien lleve 5 años sin vacaciones,
+                     la empresa acumula una deuda laboral enorme
+                     que puede detonar una demanda.
+                ══════════════════════════════════════════════════ -->
+                <article id="sec_vacaciones" aria-labelledby="tit_vac">
+                    <h3 id="tit_vac">3. Vacaciones</h3>
+                    <p>
+                        <small>
+                            Complete esta sección solo si el tipo de novedad
+                            es vacaciones disfrutadas o compensadas.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Control de vacaciones</legend>
+
+                        <!--
+                            REGLAS LEGALES VACACIONES (Art. 186-192 CST):
+                            
+                            Derecho: 15 días hábiles por año de trabajo.
+                            Se causa: después de 1 año de trabajo continuo.
+                            Se pueden acumular máximo 2 períodos (Art. 189).
+                            Si acumula más de 2 años SIN tomar vacaciones
+                            → la empresa está en mora y tiene obligación
+                            de programarlas.
+                            
+                            COMPENSACIÓN EN DINERO (Art. 189 CST):
+                            Solo se puede compensar máximo 15 días de un
+                            período de 30. El resto debe ser disfrutado.
+                            
+                            BASE DE CÁLCULO:
+                            Solo salario básico. NO incluye horas extras,
+                            recargos, ni comisiones variables.
+                            Valor día vacaciones = salario_base / 30
+                            
+                            AUTOMATIZACIÓN:
+                            — Mostrar saldo de días disponibles al seleccionar
+                              el empleado (calculado desde fecha de ingreso).
+                            — Alertar si el empleado lleva más de 2 años
+                              sin disfrutar vacaciones.
+                            — Al aprobar → descontar del saldo de vacaciones.
+                            — Al procesar en nómina → no descontar del salario
+                              (los días de vacaciones se pagan normalmente).
+                        -->
+
+                        <label for="dias_vac_disponibles">
+                            Días disponibles del empleado:
+                        </label>
+                        <output id="dias_vac_disponibles"
+                                name="dias_vac_disponibles"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+
+                        <label for="dias_vac_solicitud">
+                            Días solicitados: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="number" id="dias_vac_solicitud"
+                               name="dias_vacaciones" required
+                               value="15" min="1" max="30"
+                               aria-describedby="ayuda_dias_vac">
+                        <small id="ayuda_dias_vac">
+                            Mínimo recomendado: 6 días continuos (para que sean
+                            efectivamente descanso). Máximo por período: 15 días
+                            hábiles. Recuerde que los festivos que caigan dentro
+                            de las vacaciones no cuentan como días de vacaciones.
+                        </small>
+
+                        <label for="modalidad_vacaciones">Modalidad:</label>
+                        <select id="modalidad_vacaciones"
+                                name="modalidad_vacaciones">
+                            <option value="disfrutadas" selected>
+                                Disfrutadas (el empleado descansa)
+                            </option>
+                            <option value="compensadas">
+                                Compensadas en dinero (máx. 15 días por año)
+                            </option>
+                            <option value="colectivas">
+                                Colectivas (empresa cierra operaciones)
+                            </option>
+                        </select>
+
+                        <label for="fecha_regreso_vac">Fecha de regreso:</label>
+                        <input type="date" id="fecha_regreso_vac"
+                               name="fecha_regreso"
+                               aria-describedby="ayuda_regreso">
+                        <small id="ayuda_regreso">
+                            Se calcula automáticamente sumando los días aprobados
+                            más festivos que caigan dentro del período.
+                        </small>
+
+                        <label for="valor_pago_vacaciones">
+                            Valor a pagar ($):
+                        </label>
+                        <output id="valor_pago_vacaciones"
+                                name="valor_vacaciones"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="valor_vacaciones_valor" value="0">
+
+                        <label for="quien_cubre_cargo">
+                            ¿Quién cubre el cargo durante las vacaciones?
+                        </label>
+                        <input type="text" id="quien_cubre_cargo"
+                               name="quien_cubre"
+                               placeholder="Nombre del colaborador que asume las funciones">
+
+                        <label for="vac_ultimo_periodo">
+                            Último período de vacaciones disfrutadas:
+                        </label>
+                        <output id="vac_ultimo_periodo" name="vac_ultimo_periodo">
+                            Se carga al seleccionar el empleado
+                        </output>
+                    </fieldset>
+                </article>
+
+                <!-- ══════════════════════════════════════════════════
+                     ARTÍCULO 5 — PERMISOS Y LICENCIAS
+                     
+                     IMPACTO EN TU EMPRESA:
+                     Los permisos mal clasificados generan dos problemas:
+                     1. Pagar un permiso no remunerado como si fuera
+                        remunerado (pérdida directa de dinero).
+                     2. No pagar una licencia obligatoria por ley
+                        (riesgo de demanda laboral).
+                     
+                     Las licencias de maternidad, paternidad y luto
+                     son DERECHOS IRRENUNCIABLES que la empresa debe
+                     pagar sin importar el tipo de contrato.
+                ══════════════════════════════════════════════════ -->
+                <article id="sec_permisos" aria-labelledby="tit_permisos">
+                    <h3 id="tit_permisos">4. Permisos y licencias</h3>
+                    <p>
+                        <small>
+                            Complete esta sección para permisos remunerados,
+                            no remunerados y licencias especiales.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Licencias obligatorias por ley</legend>
+
+                        <!--
+                            LICENCIAS LEGALES — REGLAS CRÍTICAS:
+
+                            MATERNIDAD (Art. 236 CST — Ley 2114/2021):
+                              18 semanas calendario (126 días).
+                              Paga: EPS (recobro al SGSSS).
+                              Empresa adelanta el pago y cobra a la EPS.
+                              No se pueden descontar vacaciones durante la licencia.
+                              La empleada NO puede ser despedida durante el embarazo
+                              ni hasta 6 meses después del parto (fuero de maternidad).
+                              
+                            PATERNIDAD (Art. 236 CST — Ley 2114/2021):
+                              2 semanas calendario (14 días).
+                              Paga: EPS (recobro al SGSSS).
+                              Debe tomarse dentro de los 30 días siguientes al parto.
+                              
+                            LUTO (Art. 57 num. 10 CST — Ley 1280/2009):
+                              5 días hábiles por muerte de:
+                              cónyuge, compañero/a, padres, suegros,
+                              hijos, hermanos.
+                              PAGA LA EMPRESA: 100% del salario.
+                              No es compensable en dinero ni acumulable.
+                              Debe tomarse dentro de los 30 días siguientes.
+                              
+                            CALAMIDAD DOMÉSTICA (Art. 57 CST):
+                              No hay límite fijo en la ley.
+                              La empresa define el tiempo.
+                              Puede ser remunerado o no remunerado
+                              según política interna.
+                        -->
+
+                        <label for="tipo_licencia">Tipo de licencia / permiso:</label>
+                        <select id="tipo_licencia" name="tipo_licencia">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <optgroup label="Licencias obligatorias pagadas por EPS">
+                                <option value="maternidad">
+                                    Maternidad — 18 semanas (EPS paga)
+                                </option>
+                                <option value="paternidad">
+                                    Paternidad — 2 semanas (EPS paga)
+                                </option>
+                            </optgroup>
+                            <optgroup label="Licencias obligatorias pagadas por empresa">
+                                <option value="luto">
+                                    Luto — 5 días hábiles (empresa paga 100%)
+                                </option>
+                                <option value="calamidad">
+                                    Calamidad doméstica
+                                </option>
+                                <option value="jurado_votacion">
+                                    Jurado de votación (día de elecciones)
+                                </option>
+                                <option value="cita_medica">
+                                    Cita médica / cita EPS
+                                </option>
+                                <option value="diligencia_judicial">
+                                    Diligencia judicial obligatoria
+                                </option>
+                            </optgroup>
+                            <optgroup label="Permisos a convenir">
+                                <option value="permiso_remunerado">
+                                    Permiso remunerado (acuerdo con empleador)
+                                </option>
+                                <option value="permiso_no_remunerado">
+                                    Permiso no remunerado (descuento en nómina)
+                                </option>
+                                <option value="comision_servicio">
+                                    Comisión de servicio / capacitación externa
+                                </option>
+                            </optgroup>
+                        </select>
+
+                        <label for="parentesco_luto">
+                            Parentesco (solo para licencia de luto):
+                        </label>
+                        <select id="parentesco_luto" name="parentesco_luto">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="conyuge">Cónyuge / Compañero permanente</option>
+                            <option value="padre_madre">Padre / Madre</option>
+                            <option value="suegro_suegra">Suegro / Suegra</option>
+                            <option value="hijo_hija">Hijo / Hija</option>
+                            <option value="hermano_hermana">Hermano / Hermana</option>
+                            <option value="no_aplica">No aplica</option>
+                        </select>
+
+                        <label for="nombre_fallecido">
+                            Nombre del fallecido (solo luto):
+                        </label>
+                        <input type="text" id="nombre_fallecido"
+                               name="nombre_fallecido"
+                               placeholder="Nombre completo del familiar fallecido">
+
+                        <label for="quien_paga_licencia">Quién paga:</label>
+                        <output id="quien_paga_licencia" name="quien_paga_licencia"
+                                aria-live="polite">
+                            Se determina según tipo de licencia
+                        </output>
+
+                        <label for="dias_licencia_derecho">
+                            Días con derecho legal:
+                        </label>
+                        <output id="dias_licencia_derecho"
+                                name="dias_licencia_derecho"
+                                aria-live="polite">
+                            Se calcula según tipo de licencia
+                        </output>
+
+                        <label for="valor_licencia">
+                            Valor de la licencia ($):
+                        </label>
+                        <output id="valor_licencia" name="valor_licencia"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="valor_licencia_valor" value="0">
+
+                        <label for="valor_recobro_eps_licencia">
+                            Valor a recobrar a EPS ($):
+                            <small>(Solo maternidad/paternidad)</small>
+                        </label>
+                        <output id="valor_recobro_eps_licencia"
+                                name="valor_recobro_eps_licencia"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="valor_recobro_eps_lic" value="0">
+                    </fieldset>
+                </article>
+
+                <!-- ══════════════════════════════════════════════════
+                     ARTÍCULO 6 — EMBARGOS JUDICIALES
+                     
+                     IMPACTO EN TU EMPRESA:
+                     Cuando llega un auto de embargo de un juzgado,
+                     la empresa ESTÁ OBLIGADA a descontarlo de la nómina.
+                     Si no lo hace, el juez puede sancionar a la empresa.
+                     Si lo descuenta sin el auto judicial, viola el
+                     Art. 149 CST y puede ser demandada por el empleado.
+                     
+                     Es la novedad más delicada legalmente.
+                ══════════════════════════════════════════════════ -->
+                <article id="sec_embargos" aria-labelledby="tit_embargos">
+                    <h3 id="tit_embargos">5. Embargos judiciales</h3>
+                    <p>
+                        <small>
+                            Complete esta sección solo si el tipo de novedad
+                            es embargo judicial. Requiere auto judicial previo.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Datos del embargo</legend>
+
+                        <!--
+                            REGLAS LEGALES EMBARGOS (Art. 154-156 CST):
+
+                            EMBARGO DE SALARIO:
+                            Salario mínimo      : INEMBARGABLE (100%)
+                            Salario > 1 SMLMV   : embargable el 20% del excedente
+                              Ejemplo: salario $2.000.000
+                              Inembargable: $1.423.500 (1 SMLMV)
+                              Embargable: ($2.000.000 - $1.423.500) × 20% = $115.300
+                            
+                            EXCEPCIÓN — Deudas por alimentos o cooperativas:
+                            Hasta el 50% del salario puede embargarse
+                            para el pago de alimentos a favor de cónyuge,
+                            compañero/a o hijos.
+                            
+                            OBLIGACIONES DE LA EMPRESA:
+                            1. Notificar al empleado del embargo.
+                            2. Retener el valor ordenado.
+                            3. Consignarlo a la orden del juzgado
+                               en la cuenta que indique el auto.
+                            4. Informar al juzgado cuando cambie el salario.
+                            5. Informar al juzgado si el empleado se retira.
+                            
+                            AUTOMATIZACIÓN CRÍTICA:
+                            — Calcular el máximo embargable según salario.
+                            — Alertar si el monto ordenado supera el límite legal.
+                            — Generar recordatorio de pago mensual al juzgado.
+                            — Alertar si el empleado se va (hay que notificar al juez).
+                        -->
+
+                        <label for="juzgado_embargo">
+                            Juzgado que ordena el embargo:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="juzgado_embargo"
+                               name="juzgado_embargo" required
+                               placeholder="Ej: Juzgado 5 Civil Municipal de Bogotá">
+
+                        <label for="numero_proceso_embargo">
+                            Número del proceso judicial:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="numero_proceso_embargo"
+                               name="numero_proceso" required
+                               placeholder="Ej: 11001-31-03-005-2025-00142-00">
+
+                        <label for="tipo_embargo">Tipo de embargo:</label>
+                        <select id="tipo_embargo" name="tipo_embargo">
+                            <option value="ordinario">
+                                Ordinario — máx. 20% del excedente sobre SMLMV
+                            </option>
+                            <option value="alimentos">
+                                Cuota alimentaria — máx. 50% del salario
+                            </option>
+                            <option value="cooperativa">
+                                Cooperativa / entidad solidaria — máx. 50%
+                            </option>
+                        </select>
+
+                        <label for="monto_ordenado_embargo">
+                            Valor mensual ordenado ($):
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="number" id="monto_ordenado_embargo"
+                               name="monto_embargo" required min="0"
+                               placeholder="Valor exacto del auto judicial">
+
+                        <label for="maximo_embargable">
+                            Máximo embargable según ley ($):
+                        </label>
+                        <output id="maximo_embargable" name="maximo_embargable"
+                                aria-live="polite">
+                            Se calcula según salario del empleado
+                        </output>
+
+                        <label for="valor_descuento_embargo">
+                            Valor a descontar en nómina ($):
+                        </label>
+                        <output id="valor_descuento_embargo"
+                                name="valor_embargo_nomina"
+                                aria-live="polite">
+                            Menor valor entre monto ordenado y máximo legal
+                        </output>
+                        <input type="hidden" name="valor_embargo_nomina_val" value="0">
+
+                        <label for="cuenta_consignacion_embargo">
+                            Cuenta para consignación al juzgado:
+                        </label>
+                        <input type="text" id="cuenta_consignacion_embargo"
+                               name="cuenta_juzgado"
+                               placeholder="Banco y número de cuenta del juzgado">
+
+                        <label for="fecha_inicio_embargo">
+                            Desde qué nómina aplica:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_inicio_embargo"
+                               name="fecha_inicio_embargo" required>
+
+                        <label for="fecha_fin_embargo">
+                            Hasta qué nómina aplica (si hay fecha de fin):
+                        </label>
+                        <input type="date" id="fecha_fin_embargo"
+                               name="fecha_fin_embargo"
+                               aria-describedby="ayuda_fin_embargo">
+                        <small id="ayuda_fin_embargo">
+                            Si el auto no indica fecha de fin, dejar vacío.
+                            El sistema continuará descontando hasta que
+                            llegue el auto de levantamiento del embargo.
+                        </small>
+                    </fieldset>
+                </article>
+
+                <!-- ══════════════════════════════════════════════════
+                     ARTÍCULO 7 — OTROS DESCUENTOS Y PAGOS ADICIONALES
+                     
+                     IMPACTO EN TU EMPRESA:
+                     Este artículo cubre las novedades económicas que
+                     no son ausencias: préstamos, bonificaciones,
+                     comisiones, horas extras y cambios de salario.
+                     Todos estos afectan el IBC y por ende los aportes
+                     a seguridad social.
+                ══════════════════════════════════════════════════ -->
+                <article id="sec_otros" aria-labelledby="tit_otros">
+                    <h3 id="tit_otros">6. Descuentos, pagos adicionales y cambios</h3>
+
+                    <fieldset>
+                        <legend>Préstamos y libranzas</legend>
+
+                        <!--
+                            LÍMITE LEGAL DESCUENTOS (Art. 149 CST):
+                            El total de descuentos NO puede superar el 50%
+                            del salario neto del empleado.
+                            Si hay embargo + préstamo + libranza y suman
+                            más del 50%, el sistema debe rechazar el registro
+                            y pedir autorización especial.
+                            
+                            LIBRANZA (Ley 1527/2012):
+                            — Requiere autorización escrita e irrevocable del empleado.
+                            — El empleado puede solicitar reconsideración solo
+                              por urgencia médica debidamente certificada.
+                            — La empresa es responsable del descuento correcto.
+                        -->
+
+                        <label for="entidad_prestamo">
+                            Entidad / concepto:
+                        </label>
+                        <input type="text" id="entidad_prestamo"
+                               name="entidad_prestamo"
+                               placeholder="Ej: Banco Davivienda, Préstamo empresa, Cooperativa">
+
+                        <label for="cuota_descuento">
+                            Valor cuota a descontar ($):
+                        </label>
+                        <input type="number" id="cuota_descuento"
+                               name="cuota_descuento" min="0" value="0">
+
+                        <label for="saldo_pendiente_prestamo">
+                            Saldo pendiente del crédito ($):
+                        </label>
+                        <input type="number" id="saldo_pendiente_prestamo"
+                               name="saldo_credito" min="0" value="0">
+
+                        <label for="num_cuotas_restantes">
+                            Número de cuotas restantes:
+                        </label>
+                        <input type="number" id="num_cuotas_restantes"
+                               name="cuotas_restantes" min="0" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Cambio de salario</legend>
+
+                        <!--
+                            REGLA DE ORO:
+                            Un cambio de salario NUNCA se aplica retroactivamente
+                            en el sistema. Siempre aplica desde el período siguiente
+                            o desde el primer día del período actual, nunca a períodos
+                            ya cerrados.
+                            
+                            Al registrar este cambio:
+                            → El sistema crea automáticamente un registro nuevo
+                              en historial_salarial.
+                            → El salario en la tabla contratos se actualiza.
+                            → Todos los cálculos futuros usarán el nuevo valor.
+                        -->
+
+                        <label for="salario_anterior">Salario actual ($):</label>
+                        <output id="salario_anterior" name="salario_anterior"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+
+                        <label for="salario_nuevo">Nuevo salario ($):</label>
+                        <input type="number" id="salario_nuevo"
+                               name="salario_nuevo" min="1423500" step="1"
+                               placeholder="Mínimo $1.423.500">
+
+                        <label for="motivo_cambio_sal">Motivo del cambio:</label>
+                        <select id="motivo_cambio_sal" name="motivo_cambio_salario">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="aumento_anual">
+                                Aumento anual (índice IPC)
+                            </option>
+                            <option value="aumento_merito">
+                                Aumento por mérito / desempeño
+                            </option>
+                            <option value="ascenso">Ascenso de cargo</option>
+                            <option value="ajuste_smlmv">
+                                Ajuste a nuevo SMLMV
+                            </option>
+                            <option value="negociacion">
+                                Negociación individual
+                            </option>
+                        </select>
+
+                        <label for="aplica_desde_cambio_sal">Aplica desde:</label>
+                        <input type="date" id="aplica_desde_cambio_sal"
+                               name="cambio_sal_aplica_desde">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Cambio de cargo o área</legend>
+
+                        <label for="cargo_anterior">Cargo actual:</label>
+                        <output id="cargo_anterior" name="cargo_anterior">
+                            Se carga al seleccionar el empleado
+                        </output>
+
+                        <label for="cargo_nuevo">Nuevo cargo:</label>
+                        <select id="cargo_nuevo" name="id_cargo_nuevo">
+                            <option value="" disabled selected>
+                                — Seleccione nuevo cargo —
+                            </option>
+                            <!--
+                                AUTOMATIZACIÓN: Se carga desde la tabla cargos.
+                                Al seleccionar → sugerir el nuevo nivel de ARL
+                                y verificar si hay cambio salarial implícito.
+                            -->
+                        </select>
+
+                        <label for="area_nueva">Nueva área / centro de costo:</label>
+                        <select id="area_nueva" name="id_area_nueva">
+                            <option value="" disabled selected>— Seleccione —</option>
+                        </select>
+
+                        <label for="aplica_desde_cambio_cargo">Aplica desde:</label>
+                        <input type="date" id="aplica_desde_cambio_cargo"
+                               name="cambio_cargo_aplica_desde">
+                    </fieldset>
+                </article>
+
+                <!-- ACCIONES DEL FORMULARIO -->
+                <fieldset>
+                    <legend>Guardar novedad</legend>
+                    <!--
+                        FLUJO DE ESTADOS:
+                        guardar_borrador  → estado = "borrador" (no afecta nómina aún)
+                        guardar_pendiente → estado = "pendiente" (espera aprobación)
+                        guardar_aprobar   → estado = "aprobada" (lista para nómina)
+                        
+                        El estado "procesada" solo lo asigna el sistema
+                        automáticamente al cerrar el período de nómina.
+                    -->
+                    <button type="submit" name="accion" value="guardar_pendiente">
+                        Guardar y enviar a aprobación
+                    </button>
+                    <button type="submit" name="accion" value="guardar_aprobar">
+                        Guardar y aprobar directamente
+                    </button>
+                    <button type="submit" name="accion" value="guardar_borrador">
+                        Guardar borrador
+                    </button>
+                    <button type="reset">Limpiar formulario</button>
+                    <a href="novedades.php" role="button">Cancelar</a>
+                </fieldset>
+
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 3 — REGLAS DE CÁLCULO Y TABLA DE BD
+             Documentación técnica para el desarrollador.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_reglas" aria-labelledby="tit_reglas">
+            <h2 id="tit_reglas">Reglas de cálculo y estructura de base de datos</h2>
+
+            <article>
+                <h3>Tabla: novedades_nomina</h3>
+                <table>
+                    <caption>Estructura de la tabla principal de novedades</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Campo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Regla crítica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id_novedad</code></td>
+                            <td>INT PK autoincrement</td>
+                            <td>Identificador único</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_empleado</code></td>
+                            <td>INT FK → empleados</td>
+                            <td>Empleado afectado</td>
+                            <td>No puede estar en estado "retirado"</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_periodo</code></td>
+                            <td>INT FK → periodos_nomina</td>
+                            <td>Período al que aplica</td>
+                            <td>Solo períodos con estado "abierto"</td>
+                        </tr>
+                        <tr>
+                            <td><code>tipo_novedad</code></td>
+                            <td>ENUM</td>
+                            <td>Clasificación de la novedad</td>
+                            <td>Determina qué campos son obligatorios</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_inicio</code></td>
+                            <td>DATE</td>
+                            <td>Inicio de la novedad</td>
+                            <td>No puede ser anterior a fecha de ingreso</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_fin</code></td>
+                            <td>DATE NULL</td>
+                            <td>Fin de la novedad</td>
+                            <td>NULL para cambios de condición</td>
+                        </tr>
+                        <tr>
+                            <td><code>dias_novedad</code></td>
+                            <td>DECIMAL(5,2)</td>
+                            <td>Días calculados</td>
+                            <td>Calculado por el sistema, no digitado</td>
+                        </tr>
+                        <tr>
+                            <td><code>valor_afecta_empleado</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Valor que descuenta al empleado</td>
+                            <td>Positivo = descuento, negativo = pago adicional</td>
+                        </tr>
+                        <tr>
+                            <td><code>valor_afecta_empresa</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Costo o ahorro para la empresa</td>
+                            <td>Para control de provisiones y presupuesto</td>
+                        </tr>
+                        <tr>
+                            <td><code>valor_recobro_eps_arl</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Lo que debe reintegrar la EPS o ARL</td>
+                            <td>Se lleva a cuentas por cobrar en contabilidad</td>
+                        </tr>
+                        <tr>
+                            <td><code>afecta_ibc</code></td>
+                            <td>BOOLEAN</td>
+                            <td>¿Modifica la base de cotización?</td>
+                            <td>Crítico para seguridad social</td>
+                        </tr>
+                        <tr>
+                            <td><code>ruta_soporte</code></td>
+                            <td>VARCHAR(500)</td>
+                            <td>Ruta del documento soporte</td>
+                            <td>Obligatorio para aprobar la novedad</td>
+                        </tr>
+                        <tr>
+                            <td><code>estado_novedad</code></td>
+                            <td>ENUM</td>
+                            <td>borrador/pendiente/aprobada/rechazada/procesada</td>
+                            <td>Solo "aprobada" se incluye en la nómina</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_aprobador</code></td>
+                            <td>INT FK → empleados</td>
+                            <td>Quién aprobó la novedad</td>
+                            <td>Obligatorio antes de procesar</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_aprobacion</code></td>
+                            <td>DATETIME</td>
+                            <td>Cuándo fue aprobada</td>
+                            <td>Para trazabilidad UGPP</td>
+                        </tr>
+                        <tr>
+                            <td><code>usuario_registro</code></td>
+                            <td>INT FK → usuarios</td>
+                            <td>Quién la digitó</td>
+                            <td>Auditoría obligatoria</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_registro</code></td>
+                            <td>DATETIME</td>
+                            <td>Cuándo fue digitada</td>
+                            <td>No modificable después de guardar</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article>
+                <h3>Tabla: acumulados_empleado</h3>
+                <p>
+                    <small>
+                        Esta tabla es el "saldo de cuenta" de cada empleado.
+                        El sistema la actualiza automáticamente con cada
+                        novedad procesada. Sin ella no puedes saber cuántos
+                        días de vacaciones le quedan a un empleado ni cuál es
+                        su saldo de cesantías acumulado.
+                    </small>
+                </p>
+                <table>
+                    <caption>Acumulados por empleado — se actualiza con cada nómina</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Campo</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Se actualiza cuando...</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id_empleado</code></td>
+                            <td>FK → empleados</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>dias_vacaciones_causados</code></td>
+                            <td>Días acumulados desde ingreso</td>
+                            <td>Cada cierre de nómina mensual</td>
+                        </tr>
+                        <tr>
+                            <td><code>dias_vacaciones_disfrutados</code></td>
+                            <td>Días ya tomados</td>
+                            <td>Al procesar novedad de vacaciones</td>
+                        </tr>
+                        <tr>
+                            <td><code>dias_vacaciones_disponibles</code></td>
+                            <td>Causados − disfrutados</td>
+                            <td>Calculado automáticamente</td>
+                        </tr>
+                        <tr>
+                            <td><code>cesantias_acumuladas</code></td>
+                            <td>Saldo en fondo de cesantías</td>
+                            <td>Cada consignación anual (antes 15 feb)</td>
+                        </tr>
+                        <tr>
+                            <td><code>dias_incapacidad_acumulados_año</code></td>
+                            <td>Días de incapacidad en el año</td>
+                            <td>Al procesar novedad de incapacidad</td>
+                        </tr>
+                        <tr>
+                            <td><code>total_horas_extras_mes</code></td>
+                            <td>HE acumuladas en el mes</td>
+                            <td>Al procesar novedad de HE</td>
+                        </tr>
+                        <tr>
+                            <td><code>saldo_prestamo_empresa</code></td>
+                            <td>Deuda pendiente con la empresa</td>
+                            <td>Al procesar cuota de préstamo</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_ultimo_calculo</code></td>
+                            <td>Último cierre de nómina</td>
+                            <td>Cada cierre de período</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>
+            <small>
+                MY_BUSINESS S.A.S. | Módulo de Novedades de Nómina v1.0 |
+                Marco legal: CST Art. 57, 149, 154, 186, 227, 236 ·
+                Ley 100/93 · Ley 1280/2009 · Ley 1527/2012 ·
+                Ley 2114/2021 · Decreto 1295/94 · Decreto 2943/2013
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>

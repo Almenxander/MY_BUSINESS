@@ -5,13 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY_BUSINESS - Panel de Control Propietario</title>
+    <link rel="stylesheet" href="dueno.css">
 </head>
 
 <body>
 
-    
-    <header>
-        <h1>MY BUSINESS</h1>
+
+    <header id="mybusiness >
+        <h1">MY BUSINESS</h1>
         <p>Panel de Administración Global - Vista del Propietario</p>
         <div>
             <button type="button" id="btn_cerrar_sesion_top" onclick="cerrar_sesion()">Cerrar Sesión</button>
@@ -21,10 +22,28 @@
     <main>
         <section id="contenedor_principal">
             <h2 id="saludo_propietario">Bienvenido, [Nombre del Dueño]</h2>
-            <p>Estado operativo actual y herramientas de control global del establecimiento bajo la normativa comercial colombiana.</p>
+            <p>Estado operativo actual y herramientas de control global del establecimiento bajo la normativa comercial
+                colombiana.</p>
         </section>
 
         <hr>
+
+                <nav id="navegacion_global">
+            <h2>Panel de Navegación Global</h2>
+            <p>Seleccione un módulo para operar el sistema con permisos globales:</p>
+            <ul>
+                <li><a href="ventas.html">Ir a Ventas (Operario)</a></li>
+                <li><a href="inventario.html">Ir a Inventario</a></li>
+                <li><a href="panel_administrativo.html">Ir a Contabilidad (Contador)</a></li>
+                <li><a href="nomina.html">Nomina </a></li>
+                <li><a href="empleados.html">Empleados</a></li>
+            </ul>
+        </nav>
+
+
+
+        <hr>
+
 
         <section id="alertas_sistema">
             <h2>Alertas del Sistema</h2>
@@ -32,25 +51,15 @@
                 <ul>
                     <li><strong>CRÍTICO:</strong> 5 Productos están por debajo de la cantidad mínima en bodega.</li>
                     <li><strong>Recordatorio:</strong> Quedan 5 días para el cierre contable del mes.</li>
-                    <li><strong>ALERTA FINANCIERA:</strong> Descuadre de caja detectado en el Punto de Venta 1 por -$45.000 COP en el arqueo de ayer.</li>
-                    <li><strong>TALENTO HUMANO:</strong> El empleado Juan Pérez (Operario) no ha registrado su ingreso el día de hoy.</li>
-                    <li><strong>AUDITORÍA:</strong> Se detectó un intento de modificación de precio en el producto "Código 024" sin autorización del administrador.</li>
+                    <li><strong>ALERTA FINANCIERA:</strong> Descuadre de caja detectado en el Punto de Venta 1 por
+                        -$45.000 COP en el arqueo de ayer.</li>
+                    <li><strong>TALENTO HUMANO:</strong> El empleado Juan Pérez (Operario) no ha registrado su ingreso
+                        el día de hoy.</li>
+                    <li><strong>AUDITORÍA:</strong> Se detectó un intento de modificación de precio en el producto
+                        "Código 024" sin autorización del administrador.</li>
                 </ul>
             </aside>
         </section>
-
-        <hr>
-
-        <nav id="navegacion_global">
-            <h2>Panel de Navegación Global</h2>
-            <p>Seleccione un módulo para operar el sistema con permisos globales:</p>
-            <ul>
-                <li><a href="ventas.html">Ir a Ventas (Operario)</a></li>
-                <li><a href="inventario.html">Ir a Inventario</a></li>
-                <li><a href="panel_administrativo.html">Ir a Contabilidad (Contador)</a></li>
-                <li><a href="#configuracion_empresa">Configuración de Empresa</a></li>
-            </ul>
-        </nav>
 
         <hr>
 
@@ -119,10 +128,12 @@
                         <legend>Tarifas Estatales y Municipales</legend>
 
                         <label for="tarifa_iva_general">Tarifa IVA General (%):</label>
-                        <input type="number" id="tarifa_iva_general" name="tarifa_iva_general" value="19" placeholder="Ej: 19" required>
+                        <input type="number" id="tarifa_iva_general" name="tarifa_iva_general" value="19"
+                            placeholder="Ej: 19" required>
 
                         <label for="tarifa_ica">Tarifa ICA (por cada $1.000):</label>
-                        <input type="number" id="tarifa_ica" name="tarifa_ica" step="0.001" placeholder="Ej: 11.04" required>
+                        <input type="number" id="tarifa_ica" name="tarifa_ica" step="0.001" placeholder="Ej: 11.04"
+                            required>
 
                         <label for="agente_retencion">¿El negocio es Agente de Retención?</label>
                         <select name="agente_retencion" id="agente_retencion" required>
@@ -235,9 +246,8 @@
                         <legend>Datos de Contratación y Acceso Legal</legend>
 
                         <label for="empleado_cedula">Cédula de Ciudadanía (C.C.):</label>
-                        <input type="text" name="empleado_cedula" id="empleado_cedula"
-                            inputmode="numeric" pattern="[0-9]+"
-                            placeholder="Ej: 1002345678" required>
+                        <input type="text" name="empleado_cedula" id="empleado_cedula" inputmode="numeric"
+                            pattern="[0-9]+" placeholder="Ej: 1002345678" required>
 
                         <label for="nombre_completo">Nombre Completo:</label>
                         <input type="text" name="nombre_completo" id="nombre_completo"
@@ -260,8 +270,8 @@
                         </select>
 
                         <label for="clave_unica">Contraseña Asignada:</label>
-                        <input type="password" id="clave_unica" name="clave_unica"
-                            placeholder="Mínimo 6 caracteres" required>
+                        <input type="password" id="clave_unica" name="clave_unica" placeholder="Mínimo 6 caracteres"
+                            required>
 
                         <label for="clave_unica_confirmar">Confirmar Contraseña:</label>
                         <input type="password" id="clave_unica_confirmar" name="clave_unica_confirmar"
@@ -302,8 +312,8 @@
             </article>
         </section>
     </main>
-   
-        <hr>
+
+    <hr>
 
     <footer>
         <nav id="utilidades_sistema">
@@ -319,7 +329,8 @@
         </div>
         <br>
         <p>MY_BUSINESS - Información Altamente Confidencial del Propietario.</p>
-        <p>Este sistema cumple con la Ley 1581 de 2012 (Habeas Data) para el tratamiento seguro de datos de personal y clientes en Colombia.</p>
+        <p>Este sistema cumple con la Ley 1581 de 2012 (Habeas Data) para el tratamiento seguro de datos de personal y
+            clientes en Colombia.</p>
         <p>Desarrollado de manera profesional por: <strong>Alexander Sanabria Ávila</strong></p>
     </footer>
 </body>

@@ -17,25 +17,25 @@ formulario.addEventListener('submit', async (e) => {  // con este codigo.
         });
 
         const datos = await respuesta.json();
-        
-       if (respuesta.ok) {
-    sessionStorage.setItem('token', datos.token);
-    sessionStorage.setItem('nombre', datos.usuario.nombre);
-    sessionStorage.setItem('rol', datos.usuario.rol);
 
-    alert("¡Bienvenido a MY BUSINESS!");
-    const rol = datos.usuario.rol;
+        if (respuesta.ok) {
+            sessionStorage.setItem('token', datos.token);
+            sessionStorage.setItem('nombre', datos.usuario.nombre);
+            sessionStorage.setItem('rol', datos.usuario.rol);
 
-    if (rol === 'Dueño') {
-        window.location.href = 'dueno.html';
-    } else if (rol === 'Contador') {
-        window.location.href = 'panel_administrativo.html';
-    } else if (rol === 'Operario') {
-        window.location.href = 'ventas.html';
-    } else {
-        window.location.href = 'panel_administrativo.html';
-    }
-}
+            alert("¡Bienvenido a MY BUSINESS!");
+            const rol = datos.usuario.rol;
+
+            if (rol === 'Dueño') {
+                window.location.href = 'dueno.html';
+            } else if (rol === 'Contador') {
+                window.location.href = 'panel_administrativo.html';
+            } else if (rol === 'Operario') {
+                window.location.href = 'ventas.html';
+            } else {
+                window.location.href = 'panel_administrativo.html';
+            }
+        }
 
     } catch (error) {
         console.error("Error al conectar:", error);
