@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+        TÍTULO DINÁMICO:
+        Al generar el PDF se reemplaza con:
+        "Desprendible — [Nombre empleado] — [Período]"
+        Ejemplo: "Desprendible — Pérez García Juan C. — Mayo 2026 Q1"
+        Esto facilita la búsqueda y archivo del documento.
+    -->
+    <title>Desprendible de Pago — MY_BUSINESS S.A.S.</title>
+</head>
+<body>
+
+    <!--
+        ═══════════════════════════════════════════════════════════════
+        NOTA PARA EL DESARROLLADOR — GENERACIÓN DE PDFs MASIVOS
+        
+        Para empresa pequeña (5–30 empleados):
+          — PHP con librería DOMPDF o mPDF.
+          — Un PDF por empleado generado al aprobar el consolidado.
+          — Se envía automáticamente al correo_personal del empleado.
+        
+        Para empresa grande (2.500 empleados):
+          — Generación en cola (queue) con Laravel Jobs o similar.
+          — Se generan en lote después del cierre del período.
+          — Se envían por correo masivo con servicio SMTP dedicado
+            (SendGrid, Amazon SES, Postmark).
+          — Se archivan en servidor con ruta:
+            /desprendibles/AAAA/MM/id_empleado_periodo.pdf
+          — El empleado puede descargar el suyo desde el portal
+            de empleados (módulo futuro).
+        
+        IMPORTANTE:
+          — Este HTML es la PLANTILLA. Los valores entre
+            [CORCHETES] son variables que el backend reemplaza
+            antes de generar el PDF.
+          — El empleado SOLO ve las secciones A y B de este documento
+            (lo que gana y lo que le descuentan).
+          — La sección C (parafiscales y provisiones) es INTERNA
+            y NO debe aparecer en el desprendible del empleado.
+            Se imprime por separado para el archivo del contador.
+        ═══════════════════════════════════════════════════════════════
+    -->
+
+    <!--
+        AUTOMATIZACIÓN — VARIABLES DE PLANTILLA:
+        El backend PHP reemplaza estas variables antes de renderizar:
+        
+        [EMPRESA_NOMBRE]         → MY_BUSINESS S.A.S.
+        [EMPRESA_NIT]            → 000.000.000-0
+        [EMPRESA_DIRECCION]      → Dirección sede principal
+        [EMPRESA_CIUDAD]         → Municipio
+        [EMPRESA_TELEFONO]       → Teléfono de contacto
+        [EMPRESA_CORREO]         → correo de RRHH
+        
+        [EMP_NOMBRE_COMPLETO]    → Pérez García, Juan Carlos
+        [EMP_CEDULA]             → 12.345.678
+        [EMP_CARGO]              → Operario
+        [EMP_AREA]               → Operaciones
+        [EMP_CENTRO_COSTO]       → CC02 — Planta norte
+        [EMP_TIPO_CONTRATO]      → Término indefinido
+        [EMP_FECHA_INGRESO]      → 15/03/2022
+        [EMP_ANTIGUEDAD]         → 4 años, 1 mes
+        [EMP_EPS]                → Sura EPS
+        [EMP_FONDO_PENSION]      → Protección
+        [EMP_CAJA_COMP]          → Compensar
+        [EMP_BANCO]              → Bancolombia
+        [EMP_TIPO_CUENTA]        → Ahorros
+        [EMP_NUM_CUENTA]         → ***4521 (solo últimos 4 dígitos)
+        
+        [PER_DESCRIPCION]        → Mayo 2026 — 1ra quincena
+        [PER_FECHA_INICIO]       → 01/05/2026
+        [PER_FECHA_FIN]          → 15/05/2026
+        [PER_FECHA_PAGO]         → 15/05/2026
+        [PER_DIAS_PERIODO]       → 15
+        [PER_DIAS_LABORADOS]     → 15
+        [PER_DIAS_AUSENCIA]      → 0
+        [PER_DIAS_INCAPACIDAD]   → 0
+        [PER_SALARIO_MENSUAL]    → $1.423.500
+        [PER_IBC]                → $1.423.500
+        
+        [CONSEC_DESPRENDIBLE]    → 2026-05-Q1-001
+        [FECHA_GENERACION]       → 15/05/2026 10:32 am
+        [GENERADO_POR]           → María López — Aux. Nómina
+    -->
+
+    <!-- ═══ ENCABEZADO DEL DOCUMENTO ═══ -->
+    <header role="banner">
+
+        <!-- BLOQUE EMPRESA -->
+        <section aria-labelledby="tit_empresa">
+            <h1 id="tit_empresa">[EMPRESA_NOMBRE]</h1>
+            <address>
+                <p>NIT: [EMPRESA_NIT]</p>
+                <p>[EMPRESA_DIRECCION] · [EMPRESA_CIUDAD]</p>
+                <p>Tel: [EMPRESA_TELEFONO] · <a href="mailto:[EMPRESA_CORREO]">[EMPRESA_CORREO]</a></p>
+            </address>
+        </section>
+
+        <!-- TÍTULO DEL DOCUMENTO -->
+        <section aria-labelledby="tit_documento">
+            <h2 id="tit_documento">Desprendible de Nómina</h2>
+            <p>
+                Comprobante de pago de salario y prestaciones
+                según normativa laboral colombiana vigente
+            </p>
+            <dl>
+                <dt>Período:</dt>
+                <dd>[PER_DESCRIPCION]</dd>
+
+                <dt>Fecha de pago:</dt>
+                <dd>
+                    <time datetime="[PER_FECHA_PAGO_ISO]">[PER_FECHA_PAGO]</time>
+                </dd>
+
+                <dt>Número de comprobante:</dt>
+                <dd>[CONSEC_DESPRENDIBLE]</dd>
+            </dl>
+        </section>
+
+    </header>
+
+    <hr>
+
+    <main>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN A — DATOS DEL EMPLEADO
+             
+             IMPACTO EN TU EMPRESA:
+             El empleado debe poder verificar que sus datos son
+             correctos. Si hay un error en la cuenta bancaria o en
+             la EPS, este es el lugar donde lo detecta antes de
+             que genere un problema mayor.
+             
+             AUTOMATIZACIÓN:
+             — Estos datos se cargan desde la tabla empleados
+               y contratos al momento de generar el PDF.
+             — El número de cuenta bancaria se muestra PARCIAL
+               (solo últimos 4 dígitos) por seguridad.
+             — La antigüedad se calcula automáticamente:
+               DATEDIFF(fecha_pago, fecha_ingreso) convertido
+               a años y meses.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_datos_empleado" aria-labelledby="tit_emp">
+            <h2 id="tit_emp">Datos del empleado</h2>
+
+            <table>
+                <caption>Información laboral vigente para este período</caption>
+                <tbody>
+                    <tr>
+                        <th scope="row">Nombre completo:</th>
+                        <td>[EMP_NOMBRE_COMPLETO]</td>
+                        <th scope="row">Cédula de ciudadanía:</th>
+                        <td>[EMP_CEDULA]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Cargo:</th>
+                        <td>[EMP_CARGO]</td>
+                        <th scope="row">Área:</th>
+                        <td>[EMP_AREA]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Tipo de contrato:</th>
+                        <td>[EMP_TIPO_CONTRATO]</td>
+                        <th scope="row">Fecha de ingreso:</th>
+                        <td>
+                            <time datetime="[EMP_FECHA_INGRESO_ISO]">
+                                [EMP_FECHA_INGRESO]
+                            </time>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Antigüedad:</th>
+                        <td>[EMP_ANTIGUEDAD]</td>
+                        <th scope="row">Centro de costo:</th>
+                        <td>[EMP_CENTRO_COSTO]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">EPS:</th>
+                        <td>[EMP_EPS]</td>
+                        <th scope="row">Fondo de pensiones:</th>
+                        <td>[EMP_FONDO_PENSION]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Caja de compensación:</th>
+                        <td>[EMP_CAJA_COMP]</td>
+                        <th scope="row">ARL — nivel de riesgo:</th>
+                        <td>[EMP_NIVEL_ARL]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Banco:</th>
+                        <td>[EMP_BANCO]</td>
+                        <th scope="row">Cuenta [EMP_TIPO_CUENTA]:</th>
+                        <td>
+                            <!--
+                                SEGURIDAD: Nunca mostrar el número completo
+                                de cuenta en el desprendible. Solo los
+                                últimos 4 dígitos con máscara.
+                                Backend: substr($cuenta, -4) con '***' al inicio.
+                            -->
+                            ***[EMP_NUM_CUENTA]
+                            <small>(últimos 4 dígitos)</small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN B — DATOS DEL PERÍODO
+             
+             IMPACTO EN TU EMPRESA:
+             El empleado necesita saber cuántos días se le están
+             pagando y por qué. Si tuvo incapacidad, aquí ve cuántos
+             días pagó la empresa y cuántos la EPS. Evita reclamos.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_datos_periodo" aria-labelledby="tit_periodo">
+            <h2 id="tit_periodo">Período liquidado</h2>
+
+            <table>
+                <caption>Resumen del período de pago</caption>
+                <tbody>
+                    <tr>
+                        <th scope="row">Período:</th>
+                        <td>[PER_DESCRIPCION]</td>
+                        <th scope="row">Salario mensual:</th>
+                        <td>
+                            <data value="[PER_SALARIO_MENSUAL_NUM]">
+                                [PER_SALARIO_MENSUAL]
+                            </data>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Desde:</th>
+                        <td>
+                            <time datetime="[PER_FECHA_INICIO_ISO]">
+                                [PER_FECHA_INICIO]
+                            </time>
+                        </td>
+                        <th scope="row">Hasta:</th>
+                        <td>
+                            <time datetime="[PER_FECHA_FIN_ISO]">
+                                [PER_FECHA_FIN]
+                            </time>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Días del período:</th>
+                        <td>[PER_DIAS_PERIODO]</td>
+                        <th scope="row">Días laborados:</th>
+                        <td>[PER_DIAS_LABORADOS]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Días de incapacidad:</th>
+                        <td>
+                            [PER_DIAS_INCAPACIDAD]
+                            <!--
+                                AUTOMATIZACIÓN:
+                                Si dias_incapacidad > 0 → mostrar nota:
+                                "Días 1-2 pagados por empresa.
+                                 Días X en adelante pagados por EPS/ARL."
+                            -->
+                            <small>[NOTA_INCAPACIDAD]</small>
+                        </td>
+                        <th scope="row">Días de ausencia:</th>
+                        <td>[PER_DIAS_AUSENCIA]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Días de vacaciones:</th>
+                        <td>[PER_DIAS_VACACIONES]</td>
+                        <th scope="row">
+                            <abbr title="Ingreso Base de Cotización">IBC</abbr>:
+                        </th>
+                        <td>
+                            <data value="[PER_IBC_NUM]">[PER_IBC]</data>
+                            <br>
+                            <small>
+                                Base para calcular salud, pensión y ARL.
+                                No incluye auxilio de transporte.
+                            </small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN C — LIQUIDACIÓN DETALLADA (VISTA EMPLEADO)
+             
+             IMPACTO EN TU EMPRESA:
+             Esta es la tabla principal del desprendible. Está diseñada
+             para que CUALQUIER empleado la entienda, independiente
+             de su nivel educativo. Lenguaje claro, sin siglas sin
+             explicar, con notas donde hace falta.
+             
+             IMPORTANTE — LO QUE NO APARECE AQUÍ:
+             Los aportes parafiscales (SENA, ICBF, caja de compensación)
+             y las provisiones de prestaciones sociales son COSTOS DE LA
+             EMPRESA y NO se muestran al empleado en este documento.
+             Son datos internos del contador. Si el empleado los ve
+             puede confundirlos con descuentos adicionales.
+             
+             Lo que SÍ se muestra al empleado:
+               — Lo que gana (devengado)
+               — Lo que se le descuenta (deducciones)
+               — Lo que recibe en mano (neto)
+             
+             AUTOMATIZACIÓN:
+             — Todas las filas donde el valor sea $0 o "no aplica"
+               se OCULTAN automáticamente en el PDF.
+               Ejemplo: si no hubo horas extras, esa fila no aparece.
+               Esto hace el desprendible más limpio y fácil de leer.
+             — El backend evalúa: if ($valor > 0) { incluir fila }
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_liquidacion" aria-labelledby="tit_liquid">
+            <h2 id="tit_liquid">Liquidación del período</h2>
+
+            <table id="tabla_desprendible">
+                <caption>
+                    Detalle de su pago — [PER_DESCRIPCION]
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Concepto</th>
+                        <th scope="col">Descripción</th>
+                        <th scope="col">Días / Horas / Unid.</th>
+                        <th scope="col">Valor ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <!-- ════ BLOQUE 1: INGRESOS ════ -->
+                    <tr>
+                        <th scope="rowgroup" colspan="4">
+                            Lo que usted gana en este período
+                        </th>
+                    </tr>
+
+                    <!--
+                        REGLA DE OCULTAMIENTO:
+                        Cada fila tiene un comentario indicando cuándo ocultarla.
+                        El backend evalúa el valor y solo imprime la fila si > 0.
+                    -->
+
+                    <!-- SIEMPRE VISIBLE -->
+                    <tr>
+                        <td>Salario del período</td>
+                        <td>
+                            Salario mensual de
+                            <data value="[PER_SALARIO_MENSUAL_NUM]">
+                                [PER_SALARIO_MENSUAL]
+                            </data>
+                            proporcional a [PER_DIAS_LABORADOS] días laborados
+                            <br>
+                            <small>
+                                Fórmula: salario mensual ÷ 30 × días laborados
+                            </small>
+                        </td>
+                        <td>[PER_DIAS_LABORADOS] días</td>
+                        <td>
+                            <data value="[VAL_SALARIO_BASICO_NUM]">
+                                [VAL_SALARIO_BASICO]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si auxilio_transporte = 0 -->
+                    <tr>
+                        <td>Auxilio de transporte</td>
+                        <td>
+                            Subsidio legal 2026 de $200.000 mensual,
+                            proporcional a días laborados.
+                            <br>
+                            <small>
+                                Se reconoce porque su salario es
+                                inferior a 2 salarios mínimos.
+                            </small>
+                        </td>
+                        <td>[PER_DIAS_LABORADOS] días</td>
+                        <td>
+                            <data value="[VAL_AUX_TRANSPORTE_NUM]">
+                                [VAL_AUX_TRANSPORTE]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si he_diurnas = 0 -->
+                    <tr>
+                        <td>Horas extras diurnas</td>
+                        <td>
+                            Horas trabajadas fuera de la jornada ordinaria
+                            entre las 6:00 a.m. y las 9:00 p.m.
+                            Recargo del 25% sobre la hora ordinaria.
+                        </td>
+                        <td>[CANT_HED] horas</td>
+                        <td>
+                            <data value="[VAL_HED_NUM]">[VAL_HED]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si he_nocturnas = 0 -->
+                    <tr>
+                        <td>Horas extras nocturnas</td>
+                        <td>
+                            Horas extras trabajadas entre las 9:00 p.m.
+                            y las 6:00 a.m.
+                            Recargo del 75% sobre la hora ordinaria.
+                        </td>
+                        <td>[CANT_HEN] horas</td>
+                        <td>
+                            <data value="[VAL_HEN_NUM]">[VAL_HEN]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si he_dom_diurnas = 0 -->
+                    <tr>
+                        <td>Horas extras dominicales o festivas (diurnas)</td>
+                        <td>
+                            Horas extras trabajadas en domingo o festivo,
+                            entre las 6:00 a.m. y las 9:00 p.m.
+                            Recargo del 100% sobre la hora ordinaria.
+                        </td>
+                        <td>[CANT_HEDD] horas</td>
+                        <td>
+                            <data value="[VAL_HEDD_NUM]">[VAL_HEDD]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si he_dom_nocturnas = 0 -->
+                    <tr>
+                        <td>Horas extras dominicales o festivas (nocturnas)</td>
+                        <td>
+                            Horas extras trabajadas en domingo o festivo,
+                            entre las 9:00 p.m. y las 6:00 a.m.
+                            Recargo del 150% sobre la hora ordinaria.
+                        </td>
+                        <td>[CANT_HEDN] horas</td>
+                        <td>
+                            <data value="[VAL_HEDN_NUM]">[VAL_HEDN]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si recargo_nocturno = 0 -->
+                    <tr>
+                        <td>Recargo nocturno ordinario</td>
+                        <td>
+                            Horas de su jornada normal trabajadas
+                            entre las 9:00 p.m. y las 6:00 a.m.
+                            Recargo adicional del 35% sobre la hora ordinaria.
+                        </td>
+                        <td>[CANT_RNO] horas</td>
+                        <td>
+                            <data value="[VAL_RNO_NUM]">[VAL_RNO]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si recargo_dominical = 0 -->
+                    <tr>
+                        <td>Recargo dominical o festivo ordinario</td>
+                        <td>
+                            Días de descanso obligatorio (domingo o festivo)
+                            en los que usted laboró su jornada ordinaria.
+                            Recargo del 75% sobre el salario diario.
+                        </td>
+                        <td>[CANT_RDF] días</td>
+                        <td>
+                            <data value="[VAL_RDF_NUM]">[VAL_RDF]</data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si comisiones = 0 -->
+                    <tr>
+                        <td>Comisiones</td>
+                        <td>
+                            [DESC_COMISIONES]
+                            <br>
+                            <small>
+                                <!--
+                                    AUTOMATIZACIÓN:
+                                    Si comision_naturaleza = "constitutiva" → mostrar:
+                                    "Hacen parte de su salario y se incluyen en
+                                     la base de seguridad social."
+                                    Si = "no_constitutiva" → mostrar:
+                                    "No hacen parte del salario base según Art. 128 CST.
+                                     No se incluyen en la base de seguridad social."
+                                -->
+                                [NOTA_COMISIONES]
+                            </small>
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_COMISIONES_NUM]">
+                                [VAL_COMISIONES]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si bonificacion = 0 -->
+                    <tr>
+                        <td>Bonificación</td>
+                        <td>[DESC_BONIFICACION]</td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_BONIFICACION_NUM]">
+                                [VAL_BONIFICACION]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si viaticos_permanentes = 0 -->
+                    <tr>
+                        <td>Viáticos permanentes</td>
+                        <td>
+                            Viáticos de manutención y alojamiento habituales.
+                            Hacen parte de su salario (Art. 130 CST).
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_VIAT_PERM_NUM]">
+                                [VAL_VIAT_PERM]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si viaticos_accidentales = 0 -->
+                    <tr>
+                        <td>Viáticos accidentales</td>
+                        <td>
+                            Gastos de transporte esporádico.
+                            No hacen parte del salario (Art. 130 CST).
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_VIAT_ACC_NUM]">
+                                [VAL_VIAT_ACC]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si vacaciones_compensadas = 0 -->
+                    <tr>
+                        <td>Vacaciones compensadas en dinero</td>
+                        <td>
+                            Pago en dinero de [DIAS_VAC_COMP] días de vacaciones
+                            acumuladas, según acuerdo entre las partes.
+                            <br>
+                            <small>
+                                Máximo compensable: 15 días por período anual
+                                (Art. 189 CST).
+                            </small>
+                        </td>
+                        <td>[DIAS_VAC_COMP] días</td>
+                        <td>
+                            <data value="[VAL_VAC_COMP_NUM]">
+                                [VAL_VAC_COMP]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si otros_devengados = 0 -->
+                    <tr>
+                        <td>Otros ingresos</td>
+                        <td>[DESC_OTROS_DEVENGADOS]</td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_OTROS_DEV_NUM]">
+                                [VAL_OTROS_DEV]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- FILA TOTAL DEVENGADO — SIEMPRE VISIBLE -->
+                    <tr>
+                        <th scope="row" colspan="3">
+                            TOTAL DEVENGADO
+                            <br>
+                            <small>
+                                Suma de todos sus ingresos del período
+                            </small>
+                        </th>
+                        <td>
+                            <strong>
+                                <data value="[TOT_DEVENGADO_NUM]">
+                                    [TOT_DEVENGADO]
+                                </data>
+                            </strong>
+                        </td>
+                    </tr>
+
+                    <!-- ════ BLOQUE 2: DESCUENTOS ════ -->
+                    <tr>
+                        <th scope="rowgroup" colspan="4">
+                            Lo que se descuenta de su pago
+                        </th>
+                    </tr>
+
+                    <!-- SIEMPRE VISIBLE — salvo pensionados trabajando -->
+                    <tr>
+                        <td>Aporte a salud</td>
+                        <td>
+                            Su aporte obligatorio a la
+                            <abbr title="Entidad Promotora de Salud">EPS</abbr>
+                            [EMP_EPS].
+                            <br>
+                            <small>
+                                4% de su base de cotización
+                                (<abbr title="Ingreso Base de Cotización">IBC</abbr>:
+                                <data value="[PER_IBC_NUM]">[PER_IBC]</data>).
+                                La empresa aporta adicionalmente el 8.5%.
+                            </small>
+                        </td>
+                        <td>4% del IBC</td>
+                        <td>
+                            <data value="[VAL_SALUD_EMP_NUM]">
+                                [VAL_SALUD_EMP]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- SIEMPRE VISIBLE — salvo pensionados trabajando -->
+                    <tr>
+                        <td>Aporte a pensión</td>
+                        <td>
+                            Su aporte obligatorio al fondo de pensiones
+                            [EMP_FONDO_PENSION].
+                            <br>
+                            <small>
+                                4% de su base de cotización
+                                (<abbr title="Ingreso Base de Cotización">IBC</abbr>:
+                                <data value="[PER_IBC_NUM]">[PER_IBC]</data>).
+                                La empresa aporta adicionalmente el 12%.
+                            </small>
+                        </td>
+                        <td>4% del IBC</td>
+                        <td>
+                            <data value="[VAL_PENSION_EMP_NUM]">
+                                [VAL_PENSION_EMP]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si solidaridad_pensional = 0 -->
+                    <tr>
+                        <td>Fondo de solidaridad pensional</td>
+                        <td>
+                            Aporte adicional obligatorio para trabajadores
+                            con salario superior a 4 salarios mínimos.
+                            <br>
+                            <small>
+                                Art. 27 Ley 100/1993.
+                                Porcentaje según nivel salarial: [PCT_SOLIDARIDAD].
+                            </small>
+                        </td>
+                        <td>[PCT_SOLIDARIDAD] del IBC</td>
+                        <td>
+                            <data value="[VAL_SOLIDARIDAD_NUM]">
+                                [VAL_SOLIDARIDAD]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si retencion_fuente = 0 -->
+                    <tr>
+                        <td>Retención en la fuente</td>
+                        <td>
+                            Impuesto de renta retenido en su salario
+                            por cuenta de la
+                            <abbr title="Dirección de Impuestos y Aduanas Nacionales">
+                                DIAN
+                            </abbr>.
+                            <br>
+                            <small>
+                                Art. 383 Estatuto Tributario.
+                                Procedimiento [PROC_RTE] aplicado.
+                                Este valor lo descuenta la empresa y lo
+                                paga directamente a la DIAN.
+                                No es un cobro adicional: es anticipar su
+                                impuesto de renta anual.
+                            </small>
+                        </td>
+                        <td>Según tabla DIAN</td>
+                        <td>
+                            <data value="[VAL_RTE_FUENTE_NUM]">
+                                [VAL_RTE_FUENTE]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si dias_ausencia = 0 -->
+                    <tr>
+                        <td>Descuento por ausencia injustificada</td>
+                        <td>
+                            Descuento por [DIAS_AUSENCIA] día(s) de
+                            inasistencia sin justificación válida.
+                            <br>
+                            <small>Art. 57 Código Sustantivo del Trabajo.</small>
+                        </td>
+                        <td>[DIAS_AUSENCIA] días</td>
+                        <td>
+                            <data value="[VAL_DESC_AUSENCIA_NUM]">
+                                [VAL_DESC_AUSENCIA]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si sancion_dominical = 0 -->
+                    <tr>
+                        <td>Sanción descanso dominical</td>
+                        <td>
+                            Pérdida del pago del descanso dominical por
+                            inasistencia injustificada el día anterior
+                            o posterior al domingo.
+                            <br>
+                            <small>Art. 173 Código Sustantivo del Trabajo.</small>
+                        </td>
+                        <td>[CANT_DOM_SANCION] domingo(s)</td>
+                        <td>
+                            <data value="[VAL_SANCION_DOM_NUM]">
+                                [VAL_SANCION_DOM]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si embargo = 0 -->
+                    <tr>
+                        <td>Embargo judicial</td>
+                        <td>
+                            Descuento ordenado por
+                            [JUZGADO_EMBARGO],
+                            proceso No. [NUM_PROCESO_EMBARGO].
+                            <br>
+                            <small>
+                                Este descuento es una orden judicial.
+                                La empresa está obligada a hacerlo.
+                                El valor se consigna directamente al juzgado.
+                            </small>
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_EMBARGO_NUM]">
+                                [VAL_EMBARGO]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si libranza = 0 -->
+                    <tr>
+                        <td>Libranza — [ENTIDAD_LIBRANZA]</td>
+                        <td>
+                            Cuota de crédito descontada directamente
+                            de su nómina según autorización firmada.
+                            <br>
+                            <small>
+                                Ley 1527/2012.
+                                Saldo pendiente:
+                                <data value="[SALDO_LIBRANZA_NUM]">
+                                    [SALDO_LIBRANZA]
+                                </data>.
+                                Cuotas restantes: [CUOTAS_LIBRANZA].
+                            </small>
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_LIBRANZA_NUM]">
+                                [VAL_LIBRANZA]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si prestamo_empresa = 0 -->
+                    <tr>
+                        <td>Cuota préstamo empresa</td>
+                        <td>
+                            Cuota del préstamo otorgado por la empresa.
+                            <br>
+                            <small>
+                                Saldo pendiente:
+                                <data value="[SALDO_PRESTAMO_NUM]">
+                                    [SALDO_PRESTAMO]
+                                </data>.
+                                Cuotas restantes: [CUOTAS_PRESTAMO].
+                            </small>
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_PRESTAMO_NUM]">
+                                [VAL_PRESTAMO]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si faltante_caja = 0 -->
+                    <tr>
+                        <td>Faltante de caja</td>
+                        <td>
+                            Descuento por diferencia en arqueo de caja
+                            del período. Soportado con acta No. [ACTA_FALTANTE].
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_FALTANTE_NUM]">
+                                [VAL_FALTANTE]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- OCULTAR si otros_descuentos = 0 -->
+                    <tr>
+                        <td>Otros descuentos</td>
+                        <td>[DESC_OTROS_DESCUENTOS]</td>
+                        <td>—</td>
+                        <td>
+                            <data value="[VAL_OTROS_DESC_NUM]">
+                                [VAL_OTROS_DESC]
+                            </data>
+                        </td>
+                    </tr>
+
+                    <!-- FILA TOTAL DEDUCCIONES — SIEMPRE VISIBLE -->
+                    <tr>
+                        <th scope="row" colspan="3">
+                            TOTAL DESCUENTOS
+                            <br>
+                            <small>
+                                Suma de todos los descuentos del período
+                            </small>
+                        </th>
+                        <td>
+                            <strong>
+                                <data value="[TOT_DEDUCCIONES_NUM]">
+                                    [TOT_DEDUCCIONES]
+                                </data>
+                            </strong>
+                        </td>
+                    </tr>
+
+                </tbody>
+
+                <!-- ════ FILA NETO A PAGAR ════ -->
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="3">
+                            NETO A PAGAR
+                            <br>
+                            <small>
+                                Total devengado menos total descuentos.
+                                Este es el valor que recibirá en su cuenta
+                                [EMP_BANCO] [EMP_TIPO_CUENTA] ***[EMP_NUM_CUENTA]
+                                el día
+                                <time datetime="[PER_FECHA_PAGO_ISO]">
+                                    [PER_FECHA_PAGO]
+                                </time>.
+                            </small>
+                        </th>
+                        <td>
+                            <strong>
+                                <data value="[NETO_PAGAR_NUM]">
+                                    [NETO_PAGAR]
+                                </data>
+                            </strong>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN D — ACUMULADOS Y DERECHOS LABORALES
+             
+             IMPACTO EN TU EMPRESA:
+             Esta sección es la que más valoran los empleados y la que
+             más reduce las consultas a RRHH. El empleado puede ver
+             en tiempo real cuántos días de vacaciones le quedan,
+             cuánto lleva acumulado en cesantías y cuándo es su
+             próximo pago de prima. Reduce reclamaciones, desconfianza
+             y conflictos laborales.
+             
+             AUTOMATIZACIÓN:
+             — Todos los valores se toman de la tabla acumulados_empleado
+               actualizada al cierre del período.
+             — Los días de vacaciones disponibles se actualizan
+               automáticamente descontando los disfrutados.
+             — La fecha de la próxima prima se calcula según
+               si el período es antes o después de junio.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_acumulados" aria-labelledby="tit_acumulados">
+            <h2 id="tit_acumulados">Sus derechos y acumulados laborales</h2>
+            <p>
+                <small>
+                    Estos valores están actualizados al cierre de este período.
+                    Son orientativos. Para valores definitivos consulte
+                    a su fondo de cesantías y al área de RRHH.
+                </small>
+            </p>
+
+            <table>
+                <caption>
+                    Acumulados laborales — actualizados a [PER_FECHA_FIN]
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Concepto</th>
+                        <th scope="col">Valor / Días acumulados</th>
+                        <th scope="col">Información adicional</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">Vacaciones disponibles</th>
+                        <td>
+                            <data value="[DIAS_VAC_DISPONIBLES_NUM]">
+                                [DIAS_VAC_DISPONIBLES] días hábiles
+                            </data>
+                        </td>
+                        <td>
+                            Usted ha causado [DIAS_VAC_CAUSADOS] días
+                            y ha disfrutado [DIAS_VAC_DISFRUTADOS] días.
+                            <br>
+                            <small>
+                                Tiene derecho a 15 días hábiles por año
+                                trabajado (Art. 186 CST).
+                                <!--
+                                    AUTOMATIZACIÓN:
+                                    Si dias_vac_causados > 30 (más de 2 años
+                                    sin vacaciones) → mostrar advertencia:
+                                    "Tiene vacaciones acumuladas por más de
+                                     2 períodos. Le recomendamos programarlas."
+                                -->
+                                [ALERTA_VACACIONES]
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Cesantías acumuladas (en fondo)</th>
+                        <td>
+                            <data value="[CESANTIAS_ACUM_NUM]">
+                                [CESANTIAS_ACUM]
+                            </data>
+                        </td>
+                        <td>
+                            Consignadas en [EMP_FONDO_PENSION].
+                            La empresa consignará el acumulado del año
+                            antes del 15 de febrero del año siguiente
+                            (Art. 249 CST).
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Prima de servicios — próximo pago</th>
+                        <td>
+                            Estimado: [VAL_PRIMA_ESTIMADA]
+                        </td>
+                        <td>
+                            <!--
+                                AUTOMATIZACIÓN:
+                                Si estamos en primer semestre (ene–jun):
+                                "Se pagará el 30 de junio o antes."
+                                Si estamos en segundo semestre (jul–dic):
+                                "Se pagará el 20 de diciembre o antes."
+                            -->
+                            [FECHA_PROX_PRIMA]
+                            <br>
+                            <small>
+                                Valor estimado sobre salario actual.
+                                El monto final depende de los días
+                                laborados en el semestre completo.
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Intereses sobre cesantías</th>
+                        <td>
+                            Estimado: [VAL_INT_CES_ESTIMADO]
+                        </td>
+                        <td>
+                            Se pagan directamente a usted en enero.
+                            Corresponde al 12% anual sobre las cesantías
+                            acumuladas (Decreto 116/1976).
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Semanas cotizadas a pensión</th>
+                        <td>
+                            <data value="[SEMANAS_PENSION_NUM]">
+                                [SEMANAS_PENSION] semanas
+                            </data>
+                        </td>
+                        <td>
+                            <!--
+                                AUTOMATIZACIÓN:
+                                Si fondo = Colpensiones:
+                                Hombres: se pensionan con 1.300 semanas + 62 años
+                                Mujeres: se pensionan con 1.300 semanas + 57 años
+                                Mostrar % de avance si se tienen los datos.
+                            -->
+                            Acumuladas en [EMP_FONDO_PENSION].
+                            [NOTA_PENSION_AVANCE]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN E — FIRMA Y LEGALIDAD
+             
+             IMPACTO EN TU EMPRESA:
+             Esta sección convierte el desprendible en un documento
+             legal. La firma del empleado en la copia física es la
+             prueba de que recibió y aceptó el pago. Sin esta firma
+             el empleado puede alegar que nunca fue notificado del
+             valor y las deducciones. Para envíos por correo, el
+             sistema registra la fecha y hora de envío como constancia.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_firma" aria-labelledby="tit_firma">
+            <h2 id="tit_firma">Confirmación y firmas</h2>
+
+            <!--
+                NOTA LEGAL OBLIGATORIA:
+                El empleador debe informar al trabajador las razones
+                de cada deducción (Art. 59 CST). Este desprendible
+                cumple con esa obligación al detallar cada concepto.
+            -->
+            <p>
+                <small>
+                    Este comprobante certifica el pago de los conceptos
+                    descritos. Si tiene alguna inconformidad con los
+                    valores liquidados, comuníquese con el área de
+                    Recursos Humanos dentro de los 3 días hábiles
+                    siguientes a la fecha de pago.
+                </small>
+            </p>
+
+            <table aria-label="Firmas del comprobante">
+                <tbody>
+                    <tr>
+                        <!-- FIRMA EMPRESA -->
+                        <td>
+                            <p>Elaborado por:</p>
+                            <p>[GENERADO_POR]</p>
+                            <p>Responsable de nómina</p>
+                            <p>[EMPRESA_NOMBRE]</p>
+                            <br>
+                            <p>
+                                <small>
+                                    Firma: ____________________________
+                                </small>
+                            </p>
+                        </td>
+
+                        <!-- FIRMA EMPLEADO -->
+                        <td>
+                            <p>Recibí conforme:</p>
+                            <p>[EMP_NOMBRE_COMPLETO]</p>
+                            <p>C.C. [EMP_CEDULA]</p>
+                            <p>Cargo: [EMP_CARGO]</p>
+                            <br>
+                            <p>
+                                <small>
+                                    Firma: ____________________________
+                                </small>
+                            </p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!--
+                PARA DESPRENDIBLES ENVIADOS POR CORREO:
+                En lugar del espacio de firma física, incluir:
+            -->
+            <p>
+                <small>
+                    Documento generado electrónicamente el
+                    <time datetime="[FECHA_GENERACION_ISO]">
+                        [FECHA_GENERACION]
+                    </time>.
+                    Comprobante No. [CONSEC_DESPRENDIBLE].
+                    Enviado al correo [EMP_CORREO_PERSONAL].
+                    Este documento tiene validez sin firma según
+                    la Ley 527/1999 (mensajes de datos).
+                </small>
+            </p>
+        </section>
+
+    </main>
+
+    <footer>
+        <!--
+            AVISO LEGAL FINAL:
+            Obligatorio incluir el NIT y los datos de la empresa
+            para que el documento sea válido como soporte contable.
+            
+            AVISO DE CONFIDENCIALIDAD:
+            El desprendible contiene datos sensibles (salario, cuenta
+            bancaria, deudas). Protegido por Ley 1581/2012 (habeas data).
+        -->
+        <p>
+            <small>
+                [EMPRESA_NOMBRE] · NIT [EMPRESA_NIT] ·
+                [EMPRESA_DIRECCION] · [EMPRESA_CIUDAD]
+            </small>
+        </p>
+        <p>
+            <small>
+                Documento confidencial. Solo para uso del empleado.
+                La información salarial está protegida por la
+                Ley 1581/2012 de protección de datos personales.
+                Conserve este desprendible: es su soporte laboral.
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>

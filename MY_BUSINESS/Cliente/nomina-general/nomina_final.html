@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidación Definitiva por Retiro — MY_BUSINESS S.A.S.</title>
+</head>
+<body>
+
+    <header>
+        <hgroup>
+            <h1>MY_BUSINESS S.A.S.</h1>
+            <p>NIT: 000.000.000-0 | Módulo de Liquidación Definitiva por Retiro</p>
+        </hgroup>
+        <nav aria-label="Secciones del módulo">
+            <ol>
+                <li><a href="#sec_listado_liquidaciones">Liquidaciones en proceso</a></li>
+                <li><a href="#sec_datos_retiro">Datos del retiro</a></li>
+                <li><a href="#sec_ultima_nomina">Última nómina parcial</a></li>
+                <li><a href="#sec_prestaciones_definitivas">Prestaciones sociales</a></li>
+                <li><a href="#sec_indemnizacion">Indemnización</a></li>
+                <li><a href="#sec_descuentos_retiro">Descuentos y deudas</a></li>
+                <li><a href="#sec_resumen_final">Resumen final</a></li>
+                <li><a href="#sec_aprobacion_retiro">Aprobación y acta</a></li>
+                <li><a href="#sec_bd_retiro">Estructura de base de datos</a></li>
+            </ol>
+        </nav>
+    </header>
+
+    <hr>
+
+    <main>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 1 — LIQUIDACIONES EN PROCESO
+             
+             IMPACTO EN TU EMPRESA:
+             Esta sección muestra todas las liquidaciones que están
+             abiertas. Una liquidación puede tomar varios días:
+             hay que esperar el último día trabajado, calcular
+             vacaciones, confirmar deudas pendientes, y obtener
+             aprobación de la gerencia. Este listado evita que
+             alguna liquidación quede olvidada o incompleta.
+             
+             AUTOMATIZACIÓN:
+             — Al registrar el retiro de un empleado en el módulo
+               de empleados (cambiar estado a "retirado") → el sistema
+               crea automáticamente un registro aquí en estado
+               "iniciada".
+             — Alerta si la liquidación lleva más de 15 días sin
+               cerrarse: el empleador tiene 15 días hábiles para
+               pagar la liquidación después del último día trabajado
+               (Art. 65 CST). Si no paga a tiempo: debe una
+               indemnización adicional equivalente a un día de
+               salario por cada día de mora.
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_listado_liquidaciones" aria-labelledby="tit_listado_liq">
+            <h2 id="tit_listado_liq">Liquidaciones definitivas en proceso</h2>
+
+            <nav aria-label="Acciones del listado">
+                <button type="button" id="btn_nueva_liquidacion">
+                    + Iniciar nueva liquidación
+                </button>
+                <button type="button" id="btn_exportar_liquidaciones">
+                    Exportar listado
+                </button>
+            </nav>
+
+            <table>
+                <caption>
+                    Liquidaciones abiertas — requieren atención
+                    <br>
+                    <small>
+                        Plazo legal de pago: 15 días hábiles desde el último
+                        día trabajado (Art. 65 CST). La mora genera indemnización
+                        adicional de 1 día de salario por cada día de retraso.
+                    </small>
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Empleado</th>
+                        <th scope="col">Cédula</th>
+                        <th scope="col">Cargo</th>
+                        <th scope="col">Fecha retiro</th>
+                        <th scope="col">Causa de retiro</th>
+                        <th scope="col">Días transcurridos</th>
+                        <th scope="col">Valor estimado ($)</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--
+                        AUTOMATIZACIÓN:
+                        Fila en ROJO si dias_transcurridos > 15 días hábiles.
+                        Fila en AMARILLO si dias_transcurridos entre 10-15 días.
+                        Fila en VERDE si estado = "pagada".
+                    -->
+                    <tr>
+                        <td>Pérez García, Juan C.</td>
+                        <td>12.345.678</td>
+                        <td>Operario</td>
+                        <td><time datetime="2026-05-10">10/05/2026</time></td>
+                        <td>Renuncia voluntaria</td>
+                        <td>
+                            <output name="dias_mora_liq_1">5 días</output>
+                        </td>
+                        <td>
+                            <output name="valor_est_liq_1">$0</output>
+                        </td>
+                        <td>
+                            <output name="estado_liq_1">En cálculo</output>
+                        </td>
+                        <td>
+                            <a href="liquidacion.php?id=1&modo=editar">
+                                Calcular
+                            </a> |
+                            <a href="liquidacion.php?id=1&modo=ver">
+                                Ver
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 2 — FORMULARIO PRINCIPAL DE LIQUIDACIÓN
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_formulario_liquidacion" aria-labelledby="tit_form_liq">
+            <h2 id="tit_form_liq">Calcular liquidación definitiva</h2>
+
+            <form id="form_liquidacion" action="calcular_liquidacion.php"
+                  method="post" novalidate>
+
+                <input type="hidden" name="id_liquidacion" value="">
+                <input type="hidden" name="modo" value="crear">
+
+                <!-- ─── ARTÍCULO 1: DATOS DEL RETIRO ─── -->
+                <article id="sec_datos_retiro" aria-labelledby="tit_datos_retiro">
+                    <h3 id="tit_datos_retiro">1. Datos del retiro</h3>
+
+                    <fieldset>
+                        <legend>Empleado y tipo de desvinculación</legend>
+
+                        <!--
+                            AUTOMATIZACIÓN:
+                            Al seleccionar el empleado → cargar automáticamente:
+                              fecha_ingreso, salario_base, historial_salarial,
+                              dias_vacaciones_disponibles, cesantias_acumuladas,
+                              saldo_prestamo_empresa, tipo_contrato, numero_renovaciones.
+                            Esto es crítico porque el cálculo de la liquidación
+                            depende de todos estos datos históricos.
+                        -->
+                        <label for="id_emp_liq">
+                            Empleado: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="id_emp_liq" name="id_empleado" required>
+                            <option value="" disabled selected>
+                                — Seleccione el empleado —
+                            </option>
+                            <option value="1">
+                                Pérez García, Juan C. · CC 12345678 · Operario
+                            </option>
+                        </select>
+
+                        <label for="fecha_ingreso_liq">Fecha de ingreso:</label>
+                        <output id="fecha_ingreso_liq" name="fecha_ingreso_display"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+                        <input type="hidden" name="fecha_ingreso" value="">
+
+                        <label for="fecha_retiro">
+                            Fecha del último día trabajado:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_retiro" name="fecha_retiro"
+                               required aria-describedby="ayuda_fecha_retiro">
+                        <small id="ayuda_fecha_retiro">
+                            Es el último día que el empleado laboró efectivamente,
+                            no necesariamente el último día del mes.
+                            Esta fecha determina el cálculo de todos los conceptos.
+                            <strong>
+                                El plazo para pagar la liquidación vence 15 días
+                                hábiles después de esta fecha (Art. 65 CST).
+                            </strong>
+                        </small>
+
+                        <label for="antiguedad_display">Tiempo de servicio:</label>
+                        <output id="antiguedad_display" name="antiguedad_display"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="anos_servicio" value="0">
+                        <input type="hidden" name="meses_servicio" value="0">
+                        <input type="hidden" name="dias_servicio" value="0">
+
+                        <!--
+                            CAUSA DE RETIRO — DEFINICIÓN LEGAL CRÍTICA:
+                            La causa de retiro determina SI HAY INDEMNIZACIÓN
+                            y cuánto vale. Es la decisión más importante de
+                            toda la liquidación.
+                            
+                            TERMINACIÓN SIN JUSTA CAUSA (Art. 64 CST):
+                            La empresa despide al empleado sin una de las
+                            causas del Art. 62 CST.
+                            → PAGA INDEMNIZACIÓN OBLIGATORIA.
+                            
+                            TERMINACIÓN CON JUSTA CAUSA (Art. 62 CST):
+                            Causas: incumplimiento grave, actos inmorales,
+                            violencia, injuria, daño a equipos, revelación
+                            de secretos, etc.
+                            → NO paga indemnización.
+                            → Requiere proceso disciplinario previo
+                              debidamente documentado.
+                            
+                            RENUNCIA VOLUNTARIA:
+                            El empleado decide irse.
+                            → NO paga indemnización.
+                            → Requiere carta de renuncia firmada.
+                            
+                            MUTUO ACUERDO:
+                            Empresa y empleado acuerdan terminar.
+                            → Puede o no incluir indemnización negociada.
+                            → Requiere acta firmada por ambas partes.
+                            
+                            VENCIMIENTO DE CONTRATO (término fijo):
+                            Se vence el plazo sin renovación.
+                            → NO paga indemnización si se avisó 30 días antes.
+                            → SÍ paga indemnización si no se avisó.
+                            
+                            PENSIÓN:
+                            El empleado cumple requisitos de pensión.
+                            → NO paga indemnización.
+                            → Requiere resolución de reconocimiento.
+                            
+                            MUERTE DEL TRABAJADOR:
+                            → Paga todos los derechos a los beneficiarios.
+                            → NO paga indemnización por despido.
+                        -->
+                        <label for="causa_retiro">
+                            Causa de retiro: <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <select id="causa_retiro" name="causa_retiro" required
+                                aria-describedby="ayuda_causa_retiro">
+                            <optgroup label="Por decisión del empleado">
+                                <option value="renuncia_voluntaria">
+                                    Renuncia voluntaria (requiere carta firmada)
+                                </option>
+                                <option value="renuncia_con_justa_causa">
+                                    Renuncia con justa causa (Art. 62 CST)
+                                    — empleado alega incumplimiento empresa
+                                </option>
+                                <option value="abandono_cargo">
+                                    Abandono del cargo (no se presentó)
+                                </option>
+                            </optgroup>
+                            <optgroup label="Por decisión de la empresa">
+                                <option value="despido_sin_justa_causa">
+                                    Despido sin justa causa — paga indemnización
+                                </option>
+                                <option value="despido_con_justa_causa">
+                                    Despido con justa causa (Art. 62 CST)
+                                    — requiere proceso disciplinario
+                                </option>
+                            </optgroup>
+                            <optgroup label="Por acuerdo o circunstancia">
+                                <option value="mutuo_acuerdo">
+                                    Terminación por mutuo acuerdo
+                                </option>
+                                <option value="vencimiento_contrato">
+                                    Vencimiento de contrato a término fijo
+                                </option>
+                                <option value="fin_obra_labor">
+                                    Terminación obra o labor contratada
+                                </option>
+                            </optgroup>
+                            <optgroup label="Por circunstancias especiales">
+                                <option value="pension">
+                                    Pensión de vejez reconocida
+                                </option>
+                                <option value="invalidez">
+                                    Invalidez declarada (≥50% pérd. capacidad)
+                                </option>
+                                <option value="muerte">
+                                    Fallecimiento del trabajador
+                                </option>
+                                <option value="fuerza_mayor">
+                                    Fuerza mayor o caso fortuito
+                                </option>
+                            </optgroup>
+                        </select>
+                        <small id="ayuda_causa_retiro">
+                            <strong>
+                                Esta selección determina si aplica indemnización.
+                            </strong>
+                            Para despido con justa causa se requieren soportes
+                            del proceso disciplinario. Para renuncia voluntaria
+                            se requiere carta del empleado. Sin soporte la empresa
+                            queda expuesta a una demanda por despido injusto.
+                        </small>
+
+                        <label for="aplica_indemnizacion">
+                            ¿Aplica indemnización?
+                        </label>
+                        <output id="aplica_indemnizacion"
+                                name="aplica_indemnizacion"
+                                aria-live="polite">
+                            Se determina automáticamente según causa de retiro
+                        </output>
+
+                        <label for="documento_soporte_retiro">
+                            Documento soporte del retiro:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="file" id="documento_soporte_retiro"
+                               name="soporte_retiro" required
+                               accept=".pdf,.jpg,.png"
+                               aria-describedby="ayuda_soporte_retiro">
+                        <small id="ayuda_soporte_retiro">
+                            Según causa:
+                            Renuncia → carta firmada del empleado.
+                            Despido sin justa causa → carta de terminación.
+                            Despido con justa causa → acta de descargos
+                            + resolución disciplinaria.
+                            Mutuo acuerdo → acta firmada por ambas partes.
+                            Vencimiento → carta de no renovación enviada
+                            30 días antes.
+                        </small>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>
+                            Beneficiarios (solo para caso de fallecimiento)
+                        </legend>
+                        <!--
+                            MUERTE DEL TRABAJADOR (Art. 212-213 CST):
+                            Los derechos laborales se pagan a:
+                            1. Cónyuge o compañero/a permanente
+                            2. Hijos menores de 18 o incapacitados
+                            3. Padres si dependían económicamente
+                            Si no hay ninguno → los herederos según testamento
+                            o proceso sucesoral.
+                            La empresa debe pedir certificado de defunción
+                            y acreditar los beneficiarios.
+                        -->
+                        <label for="aplica_beneficiarios">
+                            ¿Pago a beneficiarios?
+                        </label>
+                        <select id="aplica_beneficiarios"
+                                name="aplica_beneficiarios">
+                            <option value="no" selected>No aplica</option>
+                            <option value="si">
+                                Sí — fallecimiento del trabajador
+                            </option>
+                        </select>
+
+                        <label for="nombre_beneficiario_1">
+                            Beneficiario principal:
+                        </label>
+                        <input type="text" id="nombre_beneficiario_1"
+                               name="beneficiario_1_nombre"
+                               placeholder="Nombre completo">
+
+                        <label for="cedula_beneficiario_1">
+                            Cédula del beneficiario:
+                        </label>
+                        <input type="text" id="cedula_beneficiario_1"
+                               name="beneficiario_1_cedula"
+                               placeholder="Número de documento">
+
+                        <label for="parentesco_beneficiario_1">
+                            Parentesco:
+                        </label>
+                        <select id="parentesco_beneficiario_1"
+                                name="beneficiario_1_parentesco">
+                            <option value="" disabled selected>— Seleccione —</option>
+                            <option value="conyuge">Cónyuge</option>
+                            <option value="compañero">Compañero/a permanente</option>
+                            <option value="hijo">Hijo/a</option>
+                            <option value="padre">Padre / Madre</option>
+                        </select>
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 2: ÚLTIMA NÓMINA PARCIAL ─── -->
+                <article id="sec_ultima_nomina" aria-labelledby="tit_ult_nom">
+                    <h3 id="tit_ult_nom">2. Última nómina parcial</h3>
+                    <p>
+                        <small>
+                            Si el retiro ocurre en la mitad de un período de nómina,
+                            hay que liquidar los días laborados en ese período
+                            parcial. Estos valores van incluidos en la liquidación
+                            definitiva, no en la nómina regular del período.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Salario y días del último período parcial</legend>
+
+                        <!--
+                            REGLA DE CÁLCULO ÚLTIMO SALARIO:
+                            Si el retiro es el día 15 o el último del mes:
+                              → El empleado ya recibió la quincena completa.
+                              → En la liquidación definitiva va el sueldo del
+                                siguiente período parcial (días 16 al retiro,
+                                o días 1 al 15 si se va a mediados del mes).
+                            
+                            Salario del período parcial:
+                            = (Salario mensual / 30) × días trabajados
+                            en el período incompleto.
+                        -->
+
+                        <label for="salario_base_liq">Salario mensual al momento del retiro ($):</label>
+                        <output id="salario_base_liq" name="salario_base_retiro"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+                        <input type="hidden" name="salario_base_retiro_val" value="0">
+
+                        <label for="fecha_inicio_ult_periodo">
+                            Inicio del último período parcial:
+                        </label>
+                        <input type="date" id="fecha_inicio_ult_periodo"
+                               name="fecha_inicio_ult_periodo">
+
+                        <label for="dias_ult_periodo">
+                            Días laborados en el último período:
+                        </label>
+                        <output id="dias_ult_periodo" name="dias_ult_periodo"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_ult_periodo_val" value="0">
+
+                        <label for="val_salario_ult_periodo">
+                            Valor salario último período ($):
+                        </label>
+                        <output id="val_salario_ult_periodo"
+                                name="val_salario_ult_periodo"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_salario_ult_periodo_val"
+                               value="0">
+
+                        <label for="val_aux_transp_ult">
+                            Auxilio de transporte proporcional ($):
+                        </label>
+                        <output id="val_aux_transp_ult" name="val_aux_transp_ult"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_aux_transp_ult_val" value="0">
+
+                        <label for="val_he_ult_periodo">
+                            Horas extras y recargos del último período ($):
+                        </label>
+                        <input type="number" id="val_he_ult_periodo"
+                               name="val_he_ult_periodo" value="0" min="0"
+                               aria-describedby="ayuda_he_ult">
+                        <small id="ayuda_he_ult">
+                            Si el empleado trabajó horas extras en el último
+                            período parcial, ingréselas aquí. También afectan
+                            el IBC para los aportes a seguridad social del
+                            último mes.
+                        </small>
+
+                        <label for="val_total_ult_nomina">
+                            Total última nómina parcial ($):
+                        </label>
+                        <output id="val_total_ult_nomina"
+                                name="val_total_ult_nomina"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_total_ult_nomina_val" value="0">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 3: PRESTACIONES SOCIALES DEFINITIVAS ─── -->
+                <article id="sec_prestaciones_definitivas"
+                         aria-labelledby="tit_prest_def">
+                    <h3 id="tit_prest_def">3. Prestaciones sociales definitivas</h3>
+
+                    <p>
+                        <small>
+                            En la liquidación definitiva se pagan las prestaciones
+                            causadas desde el último pago hasta la fecha de retiro.
+                            La base de cálculo es el promedio salarial del último
+                            año, no el salario del momento del retiro.
+                            Esta diferencia es la fuente de error más frecuente
+                            en las liquidaciones.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Base de cálculo — promedio salarial</legend>
+
+                        <!--
+                            REGLA CRÍTICA — PROMEDIO SALARIAL (Art. 253 CST):
+                            
+                            Si el salario fue FIJO todo el año:
+                              Promedio = salario actual.
+                            
+                            Si el salario VARIÓ en el último año:
+                              (por aumentos, comisiones variables, HE frecuentes)
+                              Promedio = suma de todos los salarios del último año
+                                         dividido entre 12.
+                            
+                            Si hubo COMISIONES o pagos variables:
+                              Se incluyen en el promedio para calcular
+                              cesantías, prima y vacaciones.
+                              Esto es lo que las empresas más olvidan.
+                            
+                            AUTOMATIZACIÓN CRÍTICA:
+                            El sistema debe consultar la tabla historial_salarial
+                            para los últimos 12 meses y calcular el promedio
+                            ponderado. Si hubo cambios de salario a mitad de año,
+                            cada tramo se pondera por los días que tuvo ese salario.
+                        -->
+
+                        <label for="promedio_salarial_liq">
+                            Promedio salarial último año ($):
+                        </label>
+                        <output id="promedio_salarial_liq"
+                                name="promedio_salarial"
+                                aria-live="polite">
+                            Se calcula desde historial salarial
+                        </output>
+                        <input type="hidden" name="promedio_salarial_val" value="0">
+
+                        <label for="salario_incluye_comisiones">
+                            ¿El promedio incluye comisiones variables?
+                        </label>
+                        <select id="salario_incluye_comisiones"
+                                name="incluye_comisiones">
+                            <option value="no" selected>
+                                No — salario fijo sin variables
+                            </option>
+                            <option value="si">
+                                Sí — hay comisiones o pagos variables
+                                que deben incluirse en el promedio
+                            </option>
+                        </select>
+
+                        <label for="promedio_con_variables">
+                            Promedio incluyendo variables ($):
+                        </label>
+                        <output id="promedio_con_variables"
+                                name="promedio_con_variables"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="promedio_con_variables_val"
+                               value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Cesantías definitivas</legend>
+
+                        <!--
+                            FÓRMULA CESANTÍAS (Art. 249 CST):
+                            = (Promedio salarial × días trabajados en el año) / 360
+                            
+                            IMPORTANTE:
+                            Se calculan desde la ÚLTIMA CONSIGNACIÓN al fondo
+                            (que fue el 14 de febrero del año actual)
+                            hasta la fecha de retiro.
+                            
+                            Las cesantías ANTERIORES ya están en el fondo del empleado.
+                            En la liquidación solo se calculan las del año en curso
+                            (desde 1 de enero hasta fecha de retiro, o desde la
+                            última consignación si fue distinta).
+                            
+                            La empresa paga las cesantías del año en curso
+                            DIRECTAMENTE AL EMPLEADO (no al fondo).
+                            Las cesantías de años anteriores las retira el
+                            empleado directamente de su fondo de cesantías.
+                        -->
+
+                        <label for="fecha_inicio_ces_liq">
+                            Inicio del período de cesantías a liquidar:
+                        </label>
+                        <input type="date" id="fecha_inicio_ces_liq"
+                               name="fecha_inicio_cesantias"
+                               aria-describedby="ayuda_inicio_ces">
+                        <small id="ayuda_inicio_ces">
+                            Normalmente es el 1 de enero del año en curso
+                            (o la fecha de ingreso si ingresó este año).
+                            Las cesantías de años anteriores ya fueron
+                            consignadas al fondo del empleado.
+                        </small>
+
+                        <label for="dias_ces_liq">
+                            Días para cesantías:
+                        </label>
+                        <output id="dias_ces_liq" name="dias_cesantias"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_cesantias_val" value="0">
+
+                        <label for="val_cesantias_liq">
+                            Valor cesantías a pagar ($):
+                        </label>
+                        <output id="val_cesantias_liq" name="val_cesantias_liq"
+                                aria-live="polite">
+                            Promedio × días / 360
+                        </output>
+                        <input type="hidden" name="val_cesantias_liq_val" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Intereses sobre cesantías</legend>
+
+                        <!--
+                            FÓRMULA INTERESES CESANTÍAS (Decreto 116/76):
+                            = Cesantías × 12% × (días / 360)
+                            
+                            Se calculan sobre las cesantías del año en curso.
+                            Si el empleado lleva menos de un año:
+                            = cesantias_liq × 0.12 × (dias_trabajados / 360)
+                        -->
+
+                        <label for="val_int_ces_liq">
+                            Valor intereses sobre cesantías ($):
+                        </label>
+                        <output id="val_int_ces_liq" name="val_int_ces_liq"
+                                aria-live="polite">
+                            Cesantías × 12% × (días/360)
+                        </output>
+                        <input type="hidden" name="val_int_ces_liq_val" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Prima de servicios definitiva</legend>
+
+                        <!--
+                            FÓRMULA PRIMA (Ley 1a/1963):
+                            = (Promedio salarial × días en el semestre) / 180
+                            
+                            Se calcula el semestre incompleto hasta la fecha de retiro.
+                            Ejemplo: si se retira el 10 de mayo:
+                              → Primer semestre: del 1 de enero al 10 de mayo = 130 días
+                              → Prima = (promedio × 130) / 180
+                            
+                            Si ya se pagó la prima de junio:
+                              → Solo calcular desde julio hasta la fecha de retiro.
+                        -->
+
+                        <label for="fecha_inicio_prima_liq">
+                            Inicio del semestre para prima:
+                        </label>
+                        <input type="date" id="fecha_inicio_prima_liq"
+                               name="fecha_inicio_prima"
+                               aria-describedby="ayuda_inicio_prima">
+                        <small id="ayuda_inicio_prima">
+                            Primer semestre: 1 de enero.
+                            Segundo semestre: 1 de julio.
+                            Si ya se pagó la prima del semestre anterior,
+                            iniciar desde el primer día del semestre actual.
+                        </small>
+
+                        <label for="dias_prima_liq">
+                            Días del semestre para prima:
+                        </label>
+                        <output id="dias_prima_liq" name="dias_prima_liq"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_prima_liq_val" value="0">
+
+                        <label for="val_prima_liq">
+                            Valor prima de servicios ($):
+                        </label>
+                        <output id="val_prima_liq" name="val_prima_liq"
+                                aria-live="polite">
+                            Promedio × días / 180
+                        </output>
+                        <input type="hidden" name="val_prima_liq_val" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Vacaciones definitivas</legend>
+
+                        <!--
+                            VACACIONES EN LA LIQUIDACIÓN:
+                            Hay DOS componentes:
+                            
+                            1. VACACIONES PENDIENTES (días acumulados sin disfrutar):
+                               = (dias_vac_disponibles × salario_base) / 30
+                               El salario para vacaciones es SOLO el básico,
+                               sin HE, sin recargos, sin comisiones.
+                               
+                            2. VACACIONES PROPORCIONALES del último año:
+                               = (salario_base / 720) × dias_trabajados_ultimo_año
+                               Equivale al 4.167% del tiempo laborado.
+                               
+                            AUTOMATIZACIÓN:
+                            El sistema consulta dias_vacaciones_disponibles
+                            en la tabla acumulados_empleado y calcula el valor.
+                            
+                            NOTA LEGAL IMPORTANTE:
+                            Si el empleado tenía vacaciones pendientes de años
+                            anteriores que la empresa no programó: la empresa
+                            paga el 100% de esos días SIN poder compensar
+                            solo la mitad.
+                        -->
+
+                        <label for="dias_vac_pendientes">
+                            Días de vacaciones pendientes (sin disfrutar):
+                        </label>
+                        <output id="dias_vac_pendientes"
+                                name="dias_vac_pendientes"
+                                aria-live="polite">
+                            Se carga de acumulados del empleado
+                        </output>
+                        <input type="hidden" name="dias_vac_pendientes_val" value="0">
+
+                        <label for="dias_vac_proporcionales">
+                            Días de vacaciones proporcionales del último período:
+                        </label>
+                        <output id="dias_vac_proporcionales"
+                                name="dias_vac_proporcionales"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_vac_proporcionales_val"
+                               value="0">
+
+                        <label for="dias_vac_total_liq">
+                            Total días de vacaciones a pagar:
+                        </label>
+                        <output id="dias_vac_total_liq"
+                                name="dias_vac_total_liq"
+                                aria-live="polite">
+                            Pendientes + proporcionales
+                        </output>
+                        <input type="hidden" name="dias_vac_total_liq_val" value="0">
+
+                        <label for="val_vacaciones_liq">
+                            Valor vacaciones ($):
+                        </label>
+                        <output id="val_vacaciones_liq" name="val_vacaciones_liq"
+                                aria-live="polite">
+                            Salario básico × días / 30
+                        </output>
+                        <input type="hidden" name="val_vacaciones_liq_val" value="0">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 4: INDEMNIZACIÓN ─── -->
+                <article id="sec_indemnizacion" aria-labelledby="tit_indem">
+                    <h3 id="tit_indem">4. Indemnización por despido sin justa causa</h3>
+                    <p>
+                        <small>
+                            Este artículo solo aplica si la causa de retiro es
+                            "Despido sin justa causa" (Art. 64 CST).
+                            Para todos los demás tipos de retiro el valor es $0.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Cálculo de indemnización</legend>
+
+                        <!--
+                            FÓRMULA INDEMNIZACIÓN (Art. 64 CST — reformado L.789/2002):
+                            
+                            CONTRATO A TÉRMINO INDEFINIDO:
+                            
+                            Si salario mensual ≤ 10 SMLMV ($14.235.000 en 2026):
+                              Primer año: 30 días de salario.
+                              Por cada año adicional (o fracción): 20 días.
+                            
+                            Si salario mensual > 10 SMLMV:
+                              Primer año: 20 días de salario.
+                              Por cada año adicional (o fracción): 15 días.
+                            
+                            Ejemplos con salario mínimo ($1.423.500):
+                              1 año exacto: 30 días = $1.423.500
+                              2 años: 30 + 20 = 50 días = $2.372.500
+                              5 años: 30 + (4×20) = 110 días = $5.219.500
+                            
+                            CONTRATO A TÉRMINO FIJO:
+                            = Salarios de los días restantes hasta el
+                              vencimiento del contrato.
+                            Ejemplo: contrato hasta dic 31, se despide el 1 de julio
+                            → 184 días de salario.
+                            
+                            CONTRATO DE OBRA O LABOR:
+                            = No hay indemnización si la obra terminó.
+                            = Si se despide antes de terminar la obra:
+                              aplica fórmula de término indefinido.
+                        -->
+
+                        <label for="tipo_contrato_indem">Tipo de contrato:</label>
+                        <output id="tipo_contrato_indem" name="tipo_contrato_display"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+
+                        <label for="anos_completos_indem">
+                            Años completos de servicio:
+                        </label>
+                        <output id="anos_completos_indem"
+                                name="anos_completos_indem"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="anos_completos_val" value="0">
+
+                        <label for="fraccion_anio_indem">
+                            Fracción de año adicional (días):
+                        </label>
+                        <output id="fraccion_anio_indem"
+                                name="fraccion_anio_indem"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+
+                        <label for="dias_indem_primer_anio">
+                            Días de indemnización primer año:
+                        </label>
+                        <output id="dias_indem_primer_anio"
+                                name="dias_indem_primer_anio"
+                                aria-live="polite">
+                            30 días (si salario ≤ 10 SMLMV)
+                            ó 20 días (si salario > 10 SMLMV)
+                        </output>
+
+                        <label for="dias_indem_anos_adicionales">
+                            Días de indemnización años adicionales:
+                        </label>
+                        <output id="dias_indem_anos_adicionales"
+                                name="dias_indem_anos_adicionales"
+                                aria-live="polite">
+                            20 días × años adicionales (o fracción)
+                        </output>
+
+                        <label for="dias_indem_total">
+                            Total días de indemnización:
+                        </label>
+                        <output id="dias_indem_total" name="dias_indem_total"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="dias_indem_total_val" value="0">
+
+                        <label for="val_indemnizacion">
+                            Valor indemnización ($):
+                        </label>
+                        <output id="val_indemnizacion" name="val_indemnizacion"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_indemnizacion_val" value="0">
+
+                        <!--
+                            INDEMNIZACIÓN MORATORIA (Art. 65 CST):
+                            Si la empresa NO paga la liquidación dentro de los
+                            15 días hábiles siguientes al retiro:
+                              + 1 día de salario por cada día de mora.
+                            Esta sanción puede ser enorme: si tarda 6 meses
+                            = 130 días × salario diario adicional.
+                        -->
+                        <label for="aplica_mora_art65">
+                            ¿Aplica indemnización moratoria Art. 65?
+                        </label>
+                        <select id="aplica_mora_art65" name="aplica_mora_art65"
+                                aria-describedby="ayuda_mora">
+                            <option value="no" selected>
+                                No — se paga dentro del plazo legal
+                            </option>
+                            <option value="si">
+                                Sí — ya vencieron los 15 días hábiles
+                            </option>
+                        </select>
+                        <small id="ayuda_mora">
+                            <strong>
+                                Si ya vencieron los 15 días hábiles desde
+                                el último día trabajado, hay mora.
+                            </strong>
+                            La empresa debe pagar 1 día de salario adicional
+                            por cada día de retraso hasta que pague la liquidación.
+                        </small>
+
+                        <label for="dias_mora_art65">
+                            Días de mora (si aplica):
+                        </label>
+                        <input type="number" id="dias_mora_art65"
+                               name="dias_mora_art65" value="0" min="0">
+
+                        <label for="val_mora_art65">
+                            Valor indemnización moratoria ($):
+                        </label>
+                        <output id="val_mora_art65" name="val_mora_art65"
+                                aria-live="polite">
+                            Días mora × salario diario
+                        </output>
+                        <input type="hidden" name="val_mora_art65_val" value="0">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 5: DESCUENTOS Y DEUDAS AL RETIRO ─── -->
+                <article id="sec_descuentos_retiro" aria-labelledby="tit_desc_retiro">
+                    <h3 id="tit_desc_retiro">5. Descuentos y deudas pendientes</h3>
+                    <p>
+                        <small>
+                            En la liquidación definitiva se descuentan las deudas
+                            que el empleado tenga con la empresa.
+                            <strong>
+                                Límite legal: el descuento no puede dejar el neto
+                                de la liquidación en cero ni en negativo
+                                (Art. 149 CST).
+                            </strong>
+                            Si las deudas superan la liquidación, el saldo restante
+                            debe cobrarse por vía civil — no puede descontarse
+                            más allá de lo que corresponde.
+                        </small>
+                    </p>
+
+                    <fieldset>
+                        <legend>Deudas del empleado con la empresa</legend>
+
+                        <label for="saldo_prestamo_ret">
+                            Saldo préstamo empresa ($):
+                        </label>
+                        <output id="saldo_prestamo_ret" name="saldo_prestamo_ret"
+                                aria-live="polite">
+                            Se carga de acumulados del empleado
+                        </output>
+                        <input type="number" name="desc_prestamo_empresa"
+                               value="0" min="0"
+                               placeholder="Valor a descontar"
+                               aria-label="Descuento préstamo empresa">
+
+                        <label for="saldo_libranza_ret">
+                            Saldo libranzas pendientes ($):
+                        </label>
+                        <output id="saldo_libranza_ret" name="saldo_libranza_ret"
+                                aria-live="polite">
+                            Se carga de acumulados del empleado
+                        </output>
+                        <input type="number" name="desc_libranza"
+                               value="0" min="0"
+                               placeholder="Valor cuota(s) pendiente(s)"
+                               aria-label="Descuento libranza">
+
+                        <label for="desc_dotacion_ret">
+                            Descuento dotación / uniformes ($):
+                        </label>
+                        <input type="number" id="desc_dotacion_ret"
+                               name="desc_dotacion" value="0" min="0"
+                               aria-describedby="ayuda_dotacion">
+                        <small id="ayuda_dotacion">
+                            Solo es legal descontar si hay acuerdo escrito
+                            previo y el empleado tiene menos de 3 meses de
+                            servicio. La dotación de empleados con más de
+                            3 meses NO se puede descontar (Art. 230 CST).
+                        </small>
+
+                        <label for="desc_faltantes_ret">
+                            Faltantes de caja o pérdidas ($):
+                        </label>
+                        <input type="number" id="desc_faltantes_ret"
+                               name="desc_faltantes" value="0" min="0"
+                               aria-describedby="ayuda_faltantes_ret">
+                        <small id="ayuda_faltantes_ret">
+                            Solo con acta de arqueo firmada y proceso
+                            disciplinario previo. Sin soporte no es
+                            legalmente descontable.
+                        </small>
+
+                        <label for="desc_vacaciones_disfrutadas_anticip">
+                            Vacaciones disfrutadas en exceso ($):
+                        </label>
+                        <input type="number"
+                               id="desc_vacaciones_disfrutadas_anticip"
+                               name="desc_vac_anticipo" value="0" min="0"
+                               aria-describedby="ayuda_vac_exceso">
+                        <small id="ayuda_vac_exceso">
+                            Si el empleado disfrutó más días de vacaciones
+                            de los que había causado (anticipo de vacaciones),
+                            se descuenta la diferencia en la liquidación.
+                        </small>
+
+                        <label for="otros_descuentos_ret">
+                            Otros descuentos ($):
+                        </label>
+                        <input type="number" id="otros_descuentos_ret"
+                               name="otros_descuentos_ret" value="0" min="0">
+
+                        <label for="desc_ret_descripcion">
+                            Descripción otros descuentos:
+                        </label>
+                        <textarea id="desc_ret_descripcion"
+                                  name="otros_descuentos_ret_desc"
+                                  rows="2" maxlength="300"
+                                  placeholder="Describa cada descuento con su soporte">
+                        </textarea>
+
+                        <label for="total_descuentos_ret">
+                            Total descuentos en liquidación ($):
+                        </label>
+                        <output id="total_descuentos_ret"
+                                name="total_descuentos_ret"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="total_descuentos_ret_val" value="0">
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Aportes a seguridad social del último período</legend>
+                        <!--
+                            En la liquidación definitiva también se descuentan
+                            los aportes a salud y pensión del último período
+                            parcial (4% + 4% del IBC del último mes).
+                            La empresa a su vez debe pagar su parte (8.5% + 12%)
+                            para el último mes de cotización.
+                        -->
+
+                        <label for="ibc_ultimo_mes_liq">
+                            IBC del último período para SS ($):
+                        </label>
+                        <output id="ibc_ultimo_mes_liq"
+                                name="ibc_ultimo_mes_liq"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="ibc_ultimo_mes_val" value="0">
+
+                        <label for="val_salud_emp_liq">
+                            Salud empleado último período — 4% ($):
+                        </label>
+                        <output id="val_salud_emp_liq" name="val_salud_emp_liq"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_salud_emp_liq_val" value="0">
+
+                        <label for="val_pension_emp_liq">
+                            Pensión empleado último período — 4% ($):
+                        </label>
+                        <output id="val_pension_emp_liq"
+                                name="val_pension_emp_liq"
+                                aria-live="polite">
+                            Se calcula automáticamente
+                        </output>
+                        <input type="hidden" name="val_pension_emp_liq_val" value="0">
+
+                        <label for="val_rte_fuente_liq">
+                            Retención en la fuente último período ($):
+                        </label>
+                        <output id="val_rte_fuente_liq" name="val_rte_fuente_liq"
+                                aria-live="polite">
+                            Se calcula sobre el total de la liquidación
+                        </output>
+                        <input type="hidden" name="val_rte_fuente_liq_val" value="0">
+                    </fieldset>
+                </article>
+
+                <!-- ─── ARTÍCULO 6: RESUMEN FINAL ─── -->
+                <article id="sec_resumen_final" aria-labelledby="tit_resumen_liq">
+                    <h3 id="tit_resumen_liq">6. Resumen de la liquidación definitiva</h3>
+                    <p>
+                        <small>
+                            Esta tabla es el documento que se firma con el empleado.
+                            Es la prueba legal del acuerdo de pago.
+                            Debe conservarse durante todo el tiempo posible
+                            (mínimo 20 años) porque las demandas laborales
+                            pueden presentarse hasta 3 años después del retiro.
+                        </small>
+                    </p>
+
+                    <table id="tabla_resumen_liquidacion">
+                        <caption>
+                            Liquidación definitiva — [NOMBRE_EMPLEADO]
+                            <br>
+                            <small>
+                                C.C. [CEDULA] · Retiro: [FECHA_RETIRO] ·
+                                Causa: [CAUSA_RETIRO]
+                            </small>
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Concepto</th>
+                                <th scope="col">Período / Días</th>
+                                <th scope="col">Base de cálculo ($)</th>
+                                <th scope="col">Fórmula</th>
+                                <th scope="col">Valor ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                                <th scope="rowgroup" colspan="5">
+                                    A. Última nómina parcial
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>Salario último período</td>
+                                <td>
+                                    <output name="dias_ult_per_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="sal_base_res">$0</output>
+                                </td>
+                                <td>Salario / 30 × días</td>
+                                <td>
+                                    <output name="val_sal_ult_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Auxilio de transporte proporcional</td>
+                                <td>
+                                    <output name="dias_aux_res">0 días</output>
+                                </td>
+                                <td>$200.000 / mes</td>
+                                <td>$200.000 / 30 × días</td>
+                                <td>
+                                    <output name="val_aux_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Horas extras y recargos</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Según novedades</td>
+                                <td>
+                                    <output name="val_he_res">$0</output>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="rowgroup" colspan="5">
+                                    B. Prestaciones sociales
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>Cesantías</td>
+                                <td>
+                                    <output name="dias_ces_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="prom_ces_res">$0 (promedio)</output>
+                                </td>
+                                <td>Promedio × días / 360</td>
+                                <td>
+                                    <output name="val_ces_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Intereses sobre cesantías</td>
+                                <td>
+                                    <output name="dias_intces_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="val_ces_base_int">$0 (cesantías)</output>
+                                </td>
+                                <td>Cesantías × 12% × días/360</td>
+                                <td>
+                                    <output name="val_intces_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Prima de servicios</td>
+                                <td>
+                                    <output name="dias_prima_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="prom_prima_res">$0 (promedio)</output>
+                                </td>
+                                <td>Promedio × días / 180</td>
+                                <td>
+                                    <output name="val_prima_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Vacaciones pendientes</td>
+                                <td>
+                                    <output name="dias_vac_pend_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="sal_vac_res">$0 (salario básico)</output>
+                                </td>
+                                <td>Salario básico × días / 30</td>
+                                <td>
+                                    <output name="val_vac_pend_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Vacaciones proporcionales</td>
+                                <td>
+                                    <output name="dias_vac_prop_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="sal_vac_prop_res">$0 (salario básico)</output>
+                                </td>
+                                <td>Salario básico / 720 × días</td>
+                                <td>
+                                    <output name="val_vac_prop_res">$0</output>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="rowgroup" colspan="5">
+                                    C. Indemnización (si aplica)
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>Indemnización por despido sin justa causa</td>
+                                <td>
+                                    <output name="dias_indem_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="sal_indem_res">$0 (salario)</output>
+                                </td>
+                                <td>Art. 64 CST</td>
+                                <td>
+                                    <output name="val_indem_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Indemnización moratoria (Art. 65 CST)</td>
+                                <td>
+                                    <output name="dias_mora_res">0 días</output>
+                                </td>
+                                <td>
+                                    <output name="sal_dia_mora_res">$0/día</output>
+                                </td>
+                                <td>1 día salario × días mora</td>
+                                <td>
+                                    <output name="val_mora_res">$0</output>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row" colspan="4">
+                                    SUBTOTAL DEVENGADO EN LIQUIDACIÓN
+                                </th>
+                                <td>
+                                    <output name="subtot_dev_liq">
+                                        <strong>$0</strong>
+                                    </output>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="rowgroup" colspan="5">
+                                    D. Descuentos
+                                </th>
+                            </tr>
+                            <tr>
+                                <td>Salud empleado — 4% IBC último período</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="ibc_ult_res">$0 (IBC)</output>
+                                </td>
+                                <td>IBC × 4%</td>
+                                <td>
+                                    <output name="val_sal_emp_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Pensión empleado — 4% IBC último período</td>
+                                <td>—</td>
+                                <td>
+                                    <output name="ibc_pen_res">$0 (IBC)</output>
+                                </td>
+                                <td>IBC × 4%</td>
+                                <td>
+                                    <output name="val_pen_emp_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Retención en la fuente</td>
+                                <td>—</td>
+                                <td>Base gravable</td>
+                                <td>Art. 383 E.T.</td>
+                                <td>
+                                    <output name="val_rte_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Préstamos y libranzas pendientes</td>
+                                <td>—</td>
+                                <td>Saldo en BD</td>
+                                <td>Según acuerdos</td>
+                                <td>
+                                    <output name="val_prestamos_res">$0</output>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Otros descuentos</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>Soportados</td>
+                                <td>
+                                    <output name="val_otros_desc_res">$0</output>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row" colspan="4">
+                                    TOTAL DESCUENTOS
+                                </th>
+                                <td>
+                                    <output name="tot_desc_liq">
+                                        <strong>$0</strong>
+                                    </output>
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <tfoot>
+                            <tr>
+                                <th scope="row" colspan="4">
+                                    NETO A PAGAR AL EMPLEADO
+                                    <br>
+                                    <small>
+                                        Subtotal devengado − Total descuentos.
+                                        A pagar en un solo desembolso.
+                                    </small>
+                                </th>
+                                <td>
+                                    <output name="neto_liquidacion">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="neto_liq_val" value="0">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row" colspan="4">
+                                    COSTO TOTAL EMPRESA
+                                    <br>
+                                    <small>
+                                        Neto pagado + SS empresa (8.5%+12%+ARL)
+                                        + parafiscales del último mes.
+                                    </small>
+                                </th>
+                                <td>
+                                    <output name="costo_total_liq">
+                                        <strong>$0</strong>
+                                    </output>
+                                    <input type="hidden" name="costo_total_liq_val"
+                                           value="0">
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </article>
+
+                <!-- ─── ARTÍCULO 7: APROBACIÓN Y ACTA DE LIQUIDACIÓN ─── -->
+                <article id="sec_aprobacion_retiro"
+                         aria-labelledby="tit_aprob_retiro">
+                    <h3 id="tit_aprob_retiro">7. Aprobación y acta de liquidación</h3>
+
+                    <fieldset>
+                        <legend>Medio y fecha de pago</legend>
+
+                        <label for="forma_pago_liq">Forma de pago:</label>
+                        <select id="forma_pago_liq" name="forma_pago_liq">
+                            <option value="transferencia" selected>
+                                Transferencia bancaria
+                            </option>
+                            <option value="cheque">Cheque de gerencia</option>
+                            <option value="efectivo">Efectivo</option>
+                        </select>
+
+                        <label for="fecha_pago_liq">
+                            Fecha de pago programada:
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="date" id="fecha_pago_liq"
+                               name="fecha_pago_liq" required
+                               aria-describedby="ayuda_fecha_pago_liq">
+                        <small id="ayuda_fecha_pago_liq">
+                            No puede ser posterior a 15 días hábiles desde
+                            la fecha del último día trabajado. Si supera
+                            ese plazo el sistema calculará automáticamente
+                            la indemnización moratoria del Art. 65 CST.
+                        </small>
+
+                        <label for="banco_pago_liq">Banco / cuenta destino:</label>
+                        <output id="banco_pago_liq" name="banco_pago_display"
+                                aria-live="polite">
+                            Se carga al seleccionar el empleado
+                        </output>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Firmas de aprobación</legend>
+
+                        <label for="elaborado_liq">Elaborado por:</label>
+                        <input type="text" id="elaborado_liq"
+                               name="elaborado_por" required
+                               placeholder="Nombre del auxiliar de nómina">
+
+                        <label for="revisado_liq">Revisado por (contador):</label>
+                        <input type="text" id="revisado_liq"
+                               name="revisado_por"
+                               placeholder="Nombre del contador">
+
+                        <label for="aprobado_liq">
+                            Aprobado por (representante legal):
+                            <abbr title="obligatorio">*</abbr>
+                        </label>
+                        <input type="text" id="aprobado_liq"
+                               name="aprobado_por" required
+                               placeholder="Nombre del representante legal">
+
+                        <label for="obs_liq">Observaciones:</label>
+                        <textarea id="obs_liq" name="observaciones_liq"
+                                  rows="3" maxlength="500"
+                                  placeholder="Acuerdos especiales, pagos en cuotas, aclaraciones...">
+                        </textarea>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Acciones</legend>
+                        <!--
+                            FLUJO:
+                            calcular_borrador → calcula sin guardar definitivo
+                            guardar_en_proceso → guarda en estado "en_calculo"
+                            aprobar_liquidacion →
+                              · Estado: "aprobada"
+                              · Genera PDF del acta para firmar
+                              · Genera comprobante contable
+                              · Genera pago en tesorería
+                              · Cambia estado del empleado a "retirado"
+                              · Bloquea modificaciones
+                            
+                            El PDF del acta tiene dos copias:
+                              - Copia empresa (para archivo)
+                              - Copia empleado (para entregar)
+                            El empleado firma AMBAS copias.
+                            La empresa guarda la copia firmada por el empleado
+                            como soporte de que recibió conforme.
+                        -->
+                        <button type="submit" name="accion"
+                                value="calcular_borrador">
+                            Calcular (vista previa sin guardar)
+                        </button>
+                        <button type="submit" name="accion"
+                                value="guardar_en_proceso">
+                            Guardar en proceso
+                        </button>
+                        <button type="submit" name="accion"
+                                value="aprobar_liquidacion"
+                                aria-describedby="ayuda_aprobar_liq">
+                            Aprobar y generar acta de liquidación
+                        </button>
+                        <small id="ayuda_aprobar_liq">
+                            Genera el PDF del acta y deja la liquidación
+                            lista para pago. Acción irreversible.
+                        </small>
+                        <button type="reset">Limpiar</button>
+                        <a href="liquidaciones.php" role="button">Cancelar</a>
+                    </fieldset>
+
+                </article>
+
+            </form>
+        </section>
+
+        <hr>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             SECCIÓN 3 — ESTRUCTURA DE BASE DE DATOS
+        ═══════════════════════════════════════════════════════════ -->
+        <section id="sec_bd_retiro" aria-labelledby="tit_bd_retiro">
+            <h2 id="tit_bd_retiro">Estructura de base de datos</h2>
+
+            <article>
+                <h3>Tabla: liquidaciones_definitivas</h3>
+                <table>
+                    <caption>Campos principales de la liquidación definitiva</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Campo</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Regla crítica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id_liquidacion</code></td>
+                            <td>INT PK autoincrement</td>
+                            <td>Identificador único</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_empleado</code></td>
+                            <td>INT FK → empleados</td>
+                            <td>Empleado liquidado</td>
+                            <td>Solo puede tener 1 liquidación activa</td>
+                        </tr>
+                        <tr>
+                            <td><code>causa_retiro</code></td>
+                            <td>ENUM</td>
+                            <td>Causa legal del retiro</td>
+                            <td>Determina si hay indemnización</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_retiro</code></td>
+                            <td>DATE</td>
+                            <td>Último día trabajado</td>
+                            <td>Base de todos los cálculos</td>
+                        </tr>
+                        <tr>
+                            <td><code>fecha_limite_pago</code></td>
+                            <td>DATE</td>
+                            <td>15 días hábiles desde fecha_retiro</td>
+                            <td>Calculado automáticamente</td>
+                        </tr>
+                        <tr>
+                            <td><code>promedio_salarial</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Promedio último año con variables</td>
+                            <td>
+                                Tomado de historial_salarial.
+                                NUNCA ingresar manualmente.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>val_cesantias</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Cesantías del año en curso</td>
+                            <td>Pago directo al empleado</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_intereses_ces</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Intereses proporcionales</td>
+                            <td>Calculado sobre cesantías de la liq.</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_prima</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Prima semestre incompleto</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_vacaciones</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Vac. pendientes + proporcionales</td>
+                            <td>Solo sobre salario básico</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_indemnizacion</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Indemnización Art. 64</td>
+                            <td>$0 si no es despido sin justa causa</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_mora_art65</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Indemnización moratoria</td>
+                            <td>$0 si se paga dentro del plazo</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_total_devengado</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Suma de todos los conceptos</td>
+                            <td>Calculado — no editable</td>
+                        </tr>
+                        <tr>
+                            <td><code>val_total_descuentos</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Suma de todos los descuentos</td>
+                            <td>No puede superar el devengado total</td>
+                        </tr>
+                        <tr>
+                            <td><code>neto_pagar</code></td>
+                            <td>DECIMAL(15,2)</td>
+                            <td>Lo que recibe el empleado</td>
+                            <td>Nunca puede ser negativo</td>
+                        </tr>
+                        <tr>
+                            <td><code>estado_liquidacion</code></td>
+                            <td>ENUM</td>
+                            <td>en_calculo/aprobada/pagada</td>
+                            <td>
+                                Estado "pagada" solo se asigna al
+                                registrar el comprobante de pago.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>ruta_acta_pdf</code></td>
+                            <td>VARCHAR(500)</td>
+                            <td>Ruta del PDF del acta firmada</td>
+                            <td>
+                                Conservar 20 años mínimo.
+                                El acta firmada por el empleado es la
+                                prueba de pago ante el Ministerio.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article>
+                <h3>Asiento contable de la liquidación definitiva</h3>
+                <table>
+                    <caption>
+                        Comprobante contable generado al aprobar la liquidación
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Cuenta PUC</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Débito</th>
+                            <th scope="col">Crédito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>2610</code></td>
+                            <td>Cesantías consolidadas (reversión provisión)</td>
+                            <td>Provisión acumulada</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>2615</code></td>
+                            <td>Intereses sobre cesantías (reversión provisión)</td>
+                            <td>Provisión acumulada</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>2620</code></td>
+                            <td>Prima de servicios (reversión provisión)</td>
+                            <td>Provisión acumulada</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>2625</code></td>
+                            <td>Vacaciones consolidadas (reversión provisión)</td>
+                            <td>Provisión acumulada</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>5105</code></td>
+                            <td>
+                                Gasto salario último período
+                                (si hay diferencia con provisión)
+                            </td>
+                            <td>Diferencia si mayor</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>5170</code></td>
+                            <td>Gasto indemnización por despido</td>
+                            <td>Valor indemnización</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td><code>2335</code></td>
+                            <td>Nómina por pagar — liquidación definitiva</td>
+                            <td>—</td>
+                            <td>Neto a pagar al empleado</td>
+                        </tr>
+                        <tr>
+                            <td><code>2370</code></td>
+                            <td>Retenciones por pagar — SS y RTE</td>
+                            <td>—</td>
+                            <td>SS empleado + retención fuente</td>
+                        </tr>
+                        <tr>
+                            <td><code>1305</code></td>
+                            <td>Deudas del empleado a favor empresa</td>
+                            <td>—</td>
+                            <td>Préstamos + otros descuentos</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>
+            <small>
+                MY_BUSINESS S.A.S. | Módulo de Liquidación Definitiva v1.0 |
+                Marco legal: CST Art. 64, 65, 186, 212, 249, 253 ·
+                Ley 789/2002 · Ley 100/93 · Decreto 116/76 |
+                Conservación del acta: mínimo 20 años (UGPP)
+            </small>
+        </p>
+        <p>
+            <small>
+                <strong>Prescripción:</strong> Las acciones laborales prescriben
+                en 3 años (Art. 488 CST). Conservar todos los soportes
+                por lo menos ese tiempo después del retiro.
+            </small>
+        </p>
+    </footer>
+
+</body>
+</html>
